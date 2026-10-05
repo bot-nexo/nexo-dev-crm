@@ -1,0 +1,6 @@
+{
+  "name": "Nexo Dev Studio - CRM & Pagos",
+  "description": "CRM ligero e intuitivo para agencias de desarrollo: gestión de clientes, proyectos, cobros recurrentes, pagos, automatizaciones de WhatsApp y correos con Resend y Supabase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
