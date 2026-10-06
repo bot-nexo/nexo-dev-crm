@@ -229,7 +229,7 @@ export const AutomationsCenter: React.FC<AutomationsCenterProps> = ({
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               2. Plantilla de Notificación:
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setAutomationType('confirmation')}
@@ -369,12 +369,12 @@ export const AutomationsCenter: React.FC<AutomationsCenterProps> = ({
         </div>
       </div>
 
-      {/* NOTIFICATIONS LOG HISTORY TABLE */}
-      <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
+      {/* NOTIFICATIONS LOG HISTORY SECTION */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
             <History className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-white">
+            <h3 className="text-xs sm:text-sm font-bold text-white">
               Historial de Notificaciones y Envíos ({notificaciones.length})
             </h3>
           </div>
@@ -387,7 +387,50 @@ export const AutomationsCenter: React.FC<AutomationsCenterProps> = ({
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View (< md) */}
+        <div className="block md:hidden space-y-2.5">
+          {notificaciones.length === 0 ? (
+            <div className="py-6 text-center text-xs text-slate-500">
+              No se han registrado notificaciones todavía.
+            </div>
+          ) : (
+            notificaciones.map((notif) => (
+              <div
+                key={notif.id}
+                className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-1.5"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-white">
+                    {notif.cliente?.nombre || 'Cliente'}
+                  </span>
+                  {notif.tipo === 'whatsapp' ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-400 font-mono text-[10px]">
+                      <Send className="w-3 h-3" />
+                      <span>WhatsApp</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-cyan-400 font-mono text-[10px]">
+                      <Mail className="w-3 h-3" />
+                      <span>Resend Email</span>
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-slate-300 line-clamp-2">
+                  {notif.mensaje}
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-slate-900 text-[10px] text-slate-500 font-mono">
+                  <span>{notif.fecha_envio?.replace('T', ' ').slice(0, 16)}</span>
+                  <span className="font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    {notif.estado}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950/70 text-slate-400 font-mono border-b border-slate-800">
               <tr>

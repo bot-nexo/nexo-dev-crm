@@ -165,89 +165,89 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
       </div>
 
       {/* Financial Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
         {/* Ingresos del Mes */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Ingresos del Mes</span>
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <CheckCircle2 className="w-4 h-4" />
+        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800 shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span className="font-semibold uppercase tracking-wider text-[9px] sm:text-[10px]">Ingresos Mes</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-lg lg:text-xl font-black text-white font-mono tracking-tight">
+          <div className="text-sm sm:text-lg lg:text-xl font-black text-white font-mono tracking-tight truncate">
             {formatCOP(summary.totalIngresosMes)}
           </div>
-          <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-400 font-medium">
-            <TrendingUp className="w-3 h-3" />
-            <span>Período {formatPeriodCO(currentPeriod)}</span>
+          <div className="flex items-center gap-1 mt-1 text-[9px] sm:text-[10px] text-emerald-400 font-medium truncate">
+            <TrendingUp className="w-3 h-3 shrink-0" />
+            <span className="truncate">{formatPeriodCO(currentPeriod)}</span>
           </div>
         </div>
 
         {/* Proyección del Mes (MRR) */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/40 border border-slate-800 shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">MRR Recurrente</span>
-            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              <Sparkles className="w-4 h-4" />
+        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-cyan-950/40 border border-slate-800 shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span className="font-semibold uppercase tracking-wider text-[9px] sm:text-[10px]">MRR Recurrente</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-lg lg:text-xl font-black text-cyan-400 font-mono tracking-tight">
+          <div className="text-sm sm:text-lg lg:text-xl font-black text-cyan-400 font-mono tracking-tight truncate">
             {formatCOP(summary.proyeccionMensualMRR)}
           </div>
-          <div className="text-[10px] text-slate-400 mt-1">
+          <div className="text-[9px] sm:text-[10px] text-slate-400 mt-1 truncate">
             {summary.proyectosActivosCount} proyectos activos
           </div>
         </div>
 
         {/* Pruebas Gratis */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-purple-950/40 border border-slate-800 shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Proyectos en Prueba</span>
-            <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              <Gift className="w-4 h-4" />
+        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-purple-950/40 border border-slate-800 shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span className="font-semibold uppercase tracking-wider text-[9px] sm:text-[10px]">En Prueba</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-lg lg:text-xl font-black text-purple-300 font-mono tracking-tight flex items-center gap-2">
+          <div className="text-sm sm:text-lg lg:text-xl font-black text-purple-300 font-mono tracking-tight flex items-center gap-1.5">
             <span>{summary.proyectosEnPruebaCount}</span>
             {summary.pruebasVencidasCount > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                {summary.pruebasVencidasCount} vencidos
+              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                {summary.pruebasVencidasCount} ven
               </span>
             )}
           </div>
-          <div className="text-[10px] text-purple-400/80 mt-1">
-            Pruebas gratis 7/14 días
+          <div className="text-[9px] sm:text-[10px] text-purple-400/80 mt-1 truncate">
+            Pruebas 7/14 días
           </div>
         </div>
 
         {/* Implementación Recaudada */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-slate-800 shadow-xl overflow-hidden">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Implementación Única</span>
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Rocket className="w-4 h-4" />
+        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-amber-950/40 border border-slate-800 shadow-xl overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span className="font-semibold uppercase tracking-wider text-[9px] sm:text-[10px]">Setup Único</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <Rocket className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-lg lg:text-xl font-black text-amber-300 font-mono tracking-tight">
+          <div className="text-sm sm:text-lg lg:text-xl font-black text-amber-300 font-mono tracking-tight truncate">
             {formatCOP(summary.totalIngresosImplementacion)}
           </div>
-          <div className="text-[10px] text-amber-400/80 mt-1">
-            Ingreso de setup a producción
+          <div className="text-[9px] sm:text-[10px] text-amber-400/80 mt-1 truncate">
+            Setup producción
           </div>
         </div>
 
         {/* Pagos Vencidos (Mora) */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950/40 border border-slate-800 shadow-xl">
-          <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Mora / Vencidos</span>
-            <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-              <AlertTriangle className="w-4 h-4" />
+        <div className="col-span-2 sm:col-span-1 p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950/40 border border-slate-800 shadow-xl">
+          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span className="font-semibold uppercase tracking-wider text-[9px] sm:text-[10px]">Mora / Vencidos</span>
+            <div className="p-1 sm:p-1.5 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-lg lg:text-xl font-black text-rose-400 font-mono tracking-tight">
+          <div className="text-sm sm:text-lg lg:text-xl font-black text-rose-400 font-mono tracking-tight truncate">
             {formatCOP(summary.totalVencido)}
           </div>
-          <div className="text-[10px] text-rose-300 mt-1 font-semibold">
+          <div className="text-[9px] sm:text-[10px] text-rose-300 mt-1 font-semibold truncate">
             {summary.pagosVencidosCount} facturas en mora
           </div>
         </div>
@@ -518,12 +518,12 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
         </div>
       </div>
 
-      {/* RECENT MOVEMENTS TABLE */}
-      <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
+      {/* RECENT MOVEMENTS SECTION */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-white">Últimos Movimientos de Facturación (BD)</h3>
+            <h3 className="text-xs sm:text-sm font-bold text-white">Últimos Movimientos de Facturación (BD)</h3>
           </div>
           <button
             onClick={onOpenNewPayment}
@@ -533,7 +533,56 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards (< md) */}
+        <div className="block md:hidden space-y-2.5">
+          {pagos.length === 0 ? (
+            <div className="py-6 text-center text-xs text-slate-500">
+              No hay movimientos registrados en la base de datos.
+            </div>
+          ) : (
+            pagos.slice(0, 5).map((pago) => (
+              <div
+                key={pago.id}
+                className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold text-xs text-white truncate">
+                      {pago.cliente?.nombre || 'Cliente'}
+                    </span>
+                    <span
+                      className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full ${
+                        pago.estado === 'pagado'
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : pago.estado === 'vencido'
+                          ? 'bg-rose-500/20 text-rose-400'
+                          : 'bg-amber-500/20 text-amber-400'
+                      }`}
+                    >
+                      {pago.estado}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                    {pago.proyecto?.nombre_proyecto || 'General'} • {formatDateCO(pago.fecha_pago)}
+                  </div>
+                  <div className="text-xs font-mono font-bold text-cyan-400 mt-1">
+                    {formatCOP(pago.monto)}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => onOpenReceipt(pago)}
+                  className="px-2.5 py-1 text-xs text-cyan-400 hover:text-white bg-slate-800 rounded-lg border border-slate-700 cursor-pointer shrink-0"
+                >
+                  Recibo
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop View: Table (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950/60 text-slate-400 font-mono">
               <tr>

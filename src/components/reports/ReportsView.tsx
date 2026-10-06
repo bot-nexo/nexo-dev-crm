@@ -211,37 +211,37 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs text-slate-400 block mb-1">Total Cobrado</span>
-          <div className="text-xl font-bold font-mono text-emerald-400">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <span className="text-[10px] sm:text-xs text-slate-400 block mb-1">Total Cobrado</span>
+          <div className="text-base sm:text-xl font-bold font-mono text-emerald-400 truncate">
             {formatCOP(totalFacturado)}
           </div>
-          <span className="text-[10px] text-slate-500">Liquidado con éxito</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-500">Liquidado</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs text-slate-400 block mb-1">Saldo Pendiente</span>
-          <div className="text-xl font-bold font-mono text-amber-400">
+        <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <span className="text-[10px] sm:text-xs text-slate-400 block mb-1">Saldo Pendiente</span>
+          <div className="text-base sm:text-xl font-bold font-mono text-amber-400 truncate">
             {formatCOP(totalPendiente)}
           </div>
-          <span className="text-[10px] text-slate-500">Dentro de fecha límite</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-500">A tiempo</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs text-slate-400 block mb-1">Monto en Mora</span>
-          <div className="text-xl font-bold font-mono text-rose-400">
+        <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <span className="text-[10px] sm:text-xs text-slate-400 block mb-1">Monto en Mora</span>
+          <div className="text-base sm:text-xl font-bold font-mono text-rose-400 truncate">
             {formatCOP(totalVencido)}
           </div>
-          <span className="text-[10px] text-slate-500">Atrasado de cobro</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-500">Atrasado</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
-          <span className="text-xs text-slate-400 block mb-1">Tasa de Cumplimiento</span>
-          <div className="text-xl font-bold font-mono text-cyan-400">
+        <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+          <span className="text-[10px] sm:text-xs text-slate-400 block mb-1">Cumplimiento</span>
+          <div className="text-base sm:text-xl font-bold font-mono text-cyan-400 truncate">
             {complianceRate}%
           </div>
-          <span className="text-[10px] text-slate-500">Pagos al día vs mora</span>
+          <span className="text-[9px] sm:text-[10px] text-slate-500">Al día</span>
         </div>
       </div>
 
