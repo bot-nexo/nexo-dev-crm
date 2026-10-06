@@ -1,10 +1,29 @@
 -- ============================================================================
 -- NEXO DEV STUDIO - SCHEMA DE BASE DE DATOS PARA SUPABASE (POSTGRESQL)
--- CRM LIGERO, PROYECTOS, PAGOS Y NOTIFICACIONES
+-- CRM LIGERO, PROYECTOS, PRUEBAS GRATIS, IMPLEMENTACIÓN, PAGOS Y NOTIFICACIONES
 -- ============================================================================
 
 -- Habilitar extensión para UUIDs si no está habilitada
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+ALTER DATABASE postgres SET timezone TO 'America/Bogota';
+
+-- ----------------------------------------------------------------------------
+-- SCRIPT DE MIGRACIÓN PARA BASES DE DATOS EXISTENTES
+-- Execute estas líneas en el Editor SQL de Supabase si ya tienes las tablas creadas:
+-- ----------------------------------------------------------------------------
+/*
+ALTER TABLE public.proyectos DROP CONSTRAINT IF EXISTS proyectos_estado_check;
+ALTER TABLE public.proyectos ADD CONSTRAINT proyectos_estado_check CHECK (estado IN ('activo', 'en_prueba', 'pausado', 'finalizado'));
+
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS dias_prueba SMALLINT DEFAULT 7;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS fecha_fin_prueba DATE DEFAULT NULL;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS valor_implementacion NUMERIC(12, 2) DEFAULT 0.00;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS estado_implementacion VARCHAR(20) DEFAULT 'pendiente' CHECK (estado_implementacion IN ('pendiente', 'pagado', 'no_aplica'));
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS fecha_pago_implementacion DATE DEFAULT NULL;
+
+ALTER TABLE public.pagos ADD COLUMN IF NOT EXISTS tipo_pago VARCHAR(30) DEFAULT 'cuota_mensual' CHECK (tipo_pago IN ('cuota_mensual', 'implementacion'));
+*/
 
 -- ----------------------------------------------------------------------------
 -- 1. TABLA: clientes
@@ -14,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.clientes (
     nombre VARCHAR(150) NOT NULL,
     empresa VARCHAR(150) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    telefono VARCHAR(50) NOT NULL, -- Número internacional con prefijo (ej: +5491123456789)
+    telefono VARCHAR(50) NOT NULL, -- Número internacional con prefijo
     estado VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'inactivo')),
     fecha_registro TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
@@ -34,9 +53,19 @@ CREATE TABLE IF NOT EXISTS public.proyectos (
     cliente_id UUID NOT NULL REFERENCES public.clientes(id) ON DELETE CASCADE,
     nombre_proyecto VARCHAR(200) NOT NULL,
     valor_mensual NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_mensual >= 0),
-    dia_cobro SMALLINT NOT NULL DEFAULT 1 CHECK (dia_cobro BETWEEN 1 AND 31),
-    estado VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'pausado', 'finalizado')),
+    dia_cobro SMALLINT NOT NULL DEFAULT 5 CHECK (dia_cobro BETWEEN 1 AND 31),
+    estado VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'en_prueba', 'pausado', 'finalizado')),
     fecha_inicio DATE NOT NULL DEFAULT CURRENT_DATE,
+    
+    -- Pruebas Gratis
+    dias_prueba SMALLINT DEFAULT 7,
+    fecha_fin_prueba DATE DEFAULT NULL,
+
+    -- Implementación (Pago único por puesta en producción)
+    valor_implementacion NUMERIC(12, 2) DEFAULT 0.00 CHECK (valor_implementacion >= 0),
+    estado_implementacion VARCHAR(20) DEFAULT 'pendiente' CHECK (estado_implementacion IN ('pendiente', 'pagado', 'no_aplica')),
+    fecha_pago_implementacion DATE DEFAULT NULL,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
@@ -45,6 +74,7 @@ CREATE TABLE IF NOT EXISTS public.proyectos (
 CREATE INDEX IF NOT EXISTS idx_proyectos_cliente_id ON public.proyectos(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_proyectos_estado ON public.proyectos(estado);
 CREATE INDEX IF NOT EXISTS idx_proyectos_dia_cobro ON public.proyectos(dia_cobro);
+CREATE INDEX IF NOT EXISTS idx_proyectos_implementacion ON public.proyectos(estado_implementacion);
 
 -- ----------------------------------------------------------------------------
 -- 3. TABLA: pagos
@@ -57,6 +87,7 @@ CREATE TABLE IF NOT EXISTS public.pagos (
     fecha_pago DATE NOT NULL DEFAULT CURRENT_DATE,
     periodo_mes VARCHAR(7) NOT NULL, -- Formato YYYY-MM (ej: 2026-10)
     estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pagado', 'pendiente', 'vencido')),
+    tipo_pago VARCHAR(30) DEFAULT 'cuota_mensual' CHECK (tipo_pago IN ('cuota_mensual', 'implementacion')),
     comprobante_url TEXT DEFAULT NULL,
     notas TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
@@ -67,6 +98,7 @@ CREATE TABLE IF NOT EXISTS public.pagos (
 CREATE INDEX IF NOT EXISTS idx_pagos_proyecto_id ON public.pagos(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_cliente_id ON public.pagos(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_estado ON public.pagos(estado);
+CREATE INDEX IF NOT EXISTS idx_pagos_tipo ON public.pagos(tipo_pago);
 CREATE INDEX IF NOT EXISTS idx_pagos_periodo ON public.pagos(periodo_mes);
 CREATE INDEX IF NOT EXISTS idx_pagos_fecha ON public.pagos(fecha_pago);
 
@@ -123,8 +155,6 @@ ALTER TABLE public.proyectos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notificaciones ENABLE ROW LEVEL SECURITY;
 
--- Políticas de acceso para anon / authenticated en entorno de agencia
--- (Permite lectura, inserción, actualización y eliminación para el CRM)
 CREATE POLICY "Permitir acceso completo a clientes" ON public.clientes
     FOR ALL USING (true) WITH CHECK (true);
 
@@ -136,36 +166,3 @@ CREATE POLICY "Permitir acceso completo a pagos" ON public.pagos
 
 CREATE POLICY "Permitir acceso completo a notificaciones" ON public.notificaciones
     FOR ALL USING (true) WITH CHECK (true);
-
--- ----------------------------------------------------------------------------
--- 7. DATOS INICIALES DE PRUEBA (SEED DATA - NEXO DEV STUDIO)
--- ----------------------------------------------------------------------------
-INSERT INTO public.clientes (id, nombre, empresa, email, telefono, estado)
-VALUES
-    ('a0000000-0000-0000-0000-000000000001', 'Lucas Morales', 'Aura Fintech', 'lucas@aurafintech.io', '+5491145678901', 'activo'),
-    ('a0000000-0000-0000-0000-000000000002', 'Valeria Rossi', 'Kroma Digital', 'valeria@kromadigital.com', '+5491198765432', 'activo'),
-    ('a0000000-0000-0000-0000-000000000003', 'Martín Gómez', 'Vortex Logistics', 'mgomez@vortexlog.com', '+525512345678', 'activo'),
-    ('a0000000-0000-0000-0000-000000000004', 'Camila Benítez', 'Nova Retail Group', 'camila@novaretail.co', '+573105557890', 'inactivo')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO public.proyectos (id, cliente_id, nombre_proyecto, valor_mensual, dia_cobro, estado, fecha_inicio)
-VALUES
-    ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'Plataforma Core Banking & API', 2800.00, 5, 'activo', '2026-01-15'),
-    ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 'Desarrollo E-Commerce Headless & PWA', 1950.00, 10, 'activo', '2026-03-01'),
-    ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 'Sistema SaaS de Envíos en Tiempo Real', 3400.00, 1, 'activo', '2026-02-10'),
-    ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004', 'App Mobile de Fidelización', 1200.00, 20, 'pausado', '2026-04-01')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO public.pagos (id, proyecto_id, cliente_id, monto, fecha_pago, periodo_mes, estado, comprobante_url, notas)
-VALUES
-    ('c0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 2800.00, '2026-10-05', '2026-10', 'pagado', 'https://storage.googleapis.com/recibos/recibo-nexo-1001.pdf', 'Pago mensual transferido vía Wise con éxito.'),
-    ('c0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002', 1950.00, '2026-10-10', '2026-10', 'pendiente', NULL, 'Cobro programado para el día 10 de octubre.'),
-    ('c0000000-0000-0000-0000-000000000003', 'b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003', 3400.00, '2026-10-01', '2026-10', 'vencido', NULL, 'Factura vencida hace 4 días. Se requiere aviso de mora urgente.'),
-    ('c0000000-0000-0000-0000-000000000004', 'b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 2800.00, '2026-09-05', '2026-09', 'pagado', 'https://storage.googleapis.com/recibos/recibo-nexo-0901.pdf', 'Mes de septiembre cancelado puntualmente.')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO public.notificaciones (id, cliente_id, tipo, mensaje, fecha_envio, estado, referencia_pago_id)
-VALUES
-    ('d0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001', 'whatsapp', 'Hola Lucas! Desde Nexo Dev Studio confirmamos la recepción de tu pago por $2,800.00 USD correspondiente al periodo 2026-10. ¡Muchas gracias por tu puntualidad!', '2026-10-05 10:15:00+00', 'enviado', 'c0000000-0000-0000-0000-000000000001'),
-    ('d0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000003', 'email', 'Estimado Martín Gómez, le recordamos que el abono mensual de Sistema SaaS de Envíos correspondiente a 2026-10 por $3,400.00 USD se encuentra en mora.', '2026-10-04 09:00:00+00', 'enviado', 'c0000000-0000-0000-0000-000000000003')
-ON CONFLICT (id) DO NOTHING;

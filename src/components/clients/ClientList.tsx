@@ -88,23 +88,23 @@ export const ClientList: React.FC<ClientListProps> = ({
   return (
     <div className="space-y-4">
       {/* Header & Controls Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <Users className="w-5 h-5 text-cyan-400 shrink-0" />
             <span>Directorio de Clientes</span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
-              {filteredClientes.length} {filteredClientes.length === 1 ? 'cliente' : 'clientes'}
+              {filteredClientes.length}
             </span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Gestión de cuentas, contacto rápido por WhatsApp y balance individual
+            Gestión de cuentas, contacto rápido por WhatsApp y proyectos vinculados
           </p>
         </div>
 
         <button
           onClick={onOpenCreate}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition cursor-pointer"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Nuevo Cliente</span>
@@ -112,13 +112,12 @@ export const ClientList: React.FC<ClientListProps> = ({
       </div>
 
       {/* Filter Toolbar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3 p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
-        {/* Search */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-slate-900/80 border border-slate-800">
         <div className="sm:col-span-2 relative">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Buscar por nombre, empresa, email o teléfono..."
+            placeholder="Buscar por nombre, empresa, email..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -128,7 +127,6 @@ export const ClientList: React.FC<ClientListProps> = ({
           />
         </div>
 
-        {/* State Filter */}
         <div>
           <select
             value={filterEstado}
@@ -144,7 +142,6 @@ export const ClientList: React.FC<ClientListProps> = ({
           </select>
         </div>
 
-        {/* Page size */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400 shrink-0">Mostrar:</span>
           <select
@@ -162,8 +159,94 @@ export const ClientList: React.FC<ClientListProps> = ({
         </div>
       </div>
 
-      {/* Interactive Table */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      {/* MOBILE CARDS VIEW (visible on small screens < md) */}
+      <div className="block md:hidden space-y-3">
+        {paginatedClientes.length === 0 ? (
+          <div className="p-8 text-center text-xs text-slate-500 bg-slate-900/60 border border-slate-800 rounded-2xl">
+            No se encontraron clientes que coincidan con los criterios.
+          </div>
+        ) : (
+          paginatedClientes.map((cliente) => (
+            <div
+              key={cliente.id}
+              onClick={() => onOpenDetail(cliente)}
+              className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3 shadow-lg cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-xs shrink-0">
+                    {cliente.nombre.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-white">{cliente.nombre}</h3>
+                    <div className="text-xs text-cyan-400 flex items-center gap-1 font-medium">
+                      <Building className="w-3 h-3" />
+                      <span>{cliente.empresa}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <span
+                  className={`inline-block text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    cliente.estado === 'activo'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700'
+                  }`}
+                >
+                  {cliente.estado}
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-xs p-2.5 rounded-xl bg-slate-950 border border-slate-800/80">
+                <div className="flex items-center gap-2 text-slate-300">
+                  <Mail className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="truncate">{cliente.email}</span>
+                </div>
+
+                <button
+                  onClick={(e) => handleWhatsAppClick(cliente, e)}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-mono transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{cliente.telefono}</span>
+                  </span>
+                  <span className="text-[10px] font-sans font-bold">Abrir Chat WA</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-end gap-1 pt-1 border-t border-slate-800" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => onOpenDetail(cliente)}
+                  className="p-2 text-slate-300 hover:text-cyan-400 rounded-lg bg-slate-800 transition text-xs font-medium flex items-center gap-1"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Detalles</span>
+                </button>
+                <button
+                  onClick={() => onOpenEdit(cliente)}
+                  className="p-2 text-slate-400 hover:text-white rounded-lg transition"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (window.confirm(`¿Eliminar a ${cliente.nombre}?`)) {
+                      onDeleteClient(cliente.id);
+                    }
+                  }}
+                  className="p-2 text-slate-400 hover:text-rose-400 rounded-lg transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW (visible on medium screens >= md) */}
+      <div className="hidden md:block bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950/80 text-slate-400 font-mono border-b border-slate-800">

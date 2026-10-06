@@ -23,6 +23,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { Cliente, Proyecto, Pago } from '../../types/database';
+import { formatCOP, formatDateCO, formatPeriodCO } from '../../lib/formatters';
 
 interface ReportsViewProps {
   clientes: Cliente[];
@@ -75,13 +76,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
   // Monthly Revenue Data for Chart
   const revenueByPeriod = useMemo(() => {
-    const map = new Map<string, { period: string; monto: number; pagos: number }>();
+    const map = new Map<string, { period: string; periodLabel: string; monto: number; pagos: number }>();
     filteredPagos
       .filter((p) => p.estado === 'pagado')
       .forEach((p) => {
         const per = p.periodo_mes;
         if (!map.has(per)) {
-          map.set(per, { period: per, monto: 0, pagos: 0 });
+          map.set(per, { period: per, periodLabel: formatPeriodCO(per), monto: 0, pagos: 0 });
         }
         const item = map.get(per)!;
         item.monto += Number(p.monto) || 0;
@@ -109,15 +110,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
   // Export to CSV
   const handleExportCSV = () => {
-    const headers = ['ID', 'Cliente', 'Empresa', 'Proyecto', 'Monto USD', 'Fecha Pago', 'Periodo', 'Estado', 'Notas'];
+    const headers = ['ID', 'Cliente', 'Empresa', 'Proyecto', 'Monto COP', 'Fecha Pago', 'Periodo', 'Estado', 'Notas'];
     const rows = filteredPagos.map((p) => [
       p.id,
       `"${p.cliente?.nombre || ''}"`,
       `"${p.cliente?.empresa || ''}"`,
       `"${p.proyecto?.nombre_proyecto || ''}"`,
       p.monto,
-      p.fecha_pago,
-      p.periodo_mes,
+      formatDateCO(p.fecha_pago),
+      formatPeriodCO(p.periodo_mes),
       p.estado,
       `"${(p.notas || '').replace(/"/g, '""')}"`,
     ]);
@@ -147,7 +148,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             <span>Informes Financieros & Cumplimiento</span>
           </h2>
           <p className="text-xs text-slate-400">
-            Análisis de ingresos recurrentes, cobranzas por proyecto y tasa de morosidad
+            Análisis de ingresos recurrentes en Pesos Colombianos (COP), cobranzas por proyecto y tasa de morosidad
           </p>
         </div>
 
@@ -214,7 +215,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
           <span className="text-xs text-slate-400 block mb-1">Total Cobrado</span>
           <div className="text-xl font-bold font-mono text-emerald-400">
-            ${totalFacturado.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {formatCOP(totalFacturado)}
           </div>
           <span className="text-[10px] text-slate-500">Liquidado con éxito</span>
         </div>
@@ -222,7 +223,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
           <span className="text-xs text-slate-400 block mb-1">Saldo Pendiente</span>
           <div className="text-xl font-bold font-mono text-amber-400">
-            ${totalPendiente.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {formatCOP(totalPendiente)}
           </div>
           <span className="text-[10px] text-slate-500">Dentro de fecha límite</span>
         </div>
@@ -230,7 +231,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
           <span className="text-xs text-slate-400 block mb-1">Monto en Mora</span>
           <div className="text-xl font-bold font-mono text-rose-400">
-            ${totalVencido.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {formatCOP(totalVencido)}
           </div>
           <span className="text-[10px] text-slate-500">Atrasado de cobro</span>
         </div>
@@ -249,13 +250,17 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         {/* Monthly bar */}
         <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800">
           <h3 className="text-sm font-bold text-white mb-1">Histórico de Ingresos Realizados</h3>
-          <p className="text-xs text-slate-400 mb-4">Monto total liquidado mes a mes</p>
+          <p className="text-xs text-slate-400 mb-4">Monto total liquidado mes a mes en Pesos Colombianos</p>
           <div className="h-60 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueByPeriod} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={revenueByPeriod} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="period" stroke="#64748b" fontSize={11} />
-                <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => `$${val}`} />
+                <XAxis dataKey="periodLabel" stroke="#64748b" fontSize={11} />
+                <YAxis
+                  stroke="#64748b"
+                  fontSize={10}
+                  tickFormatter={(val) => `$${(val / 1000000).toFixed(1)}M`}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#090d16',
@@ -263,8 +268,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                     borderRadius: '8px',
                     fontSize: '12px',
                   }}
+                  formatter={(value: any) => [formatCOP(value), 'Total Cobrado']}
                 />
-                <Bar dataKey="monto" name="Total Cobrado ($)" fill="#00f2fe" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="monto" name="Total Cobrado (COP)" fill="#00f2fe" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -273,7 +279,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         {/* Top Clients by Revenue Leaderboard */}
         <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800">
           <h3 className="text-sm font-bold text-white mb-1">Top Clientes por Aportación</h3>
-          <p className="text-xs text-slate-400 mb-4">Total histórico facturado por cliente</p>
+          <p className="text-xs text-slate-400 mb-4">Total histórico facturado por cliente (COP)</p>
 
           <div className="space-y-3">
             {topClients.length === 0 ? (
@@ -298,7 +304,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
                   <div className="text-right">
                     <div className="font-mono font-bold text-xs text-cyan-400">
-                      ${item.total.toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD
+                      {formatCOP(item.total)}
                     </div>
                     <span className="text-[10px] text-slate-500">{item.count} pagos registrados</span>
                   </div>
@@ -311,3 +317,4 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     </div>
   );
 };
+

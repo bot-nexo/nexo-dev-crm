@@ -3,6 +3,7 @@ import { X, Printer, Send, Mail, CheckCircle2, Copy, Check, FileText } from 'luc
 import { Pago, Cliente, Proyecto } from '../../types/database';
 import { NotificationService } from '../../services/notificationService';
 import { getStoredConfig } from '../../lib/supabase';
+import { formatCOP, formatDateCO, formatPeriodCO } from '../../lib/formatters';
 
 interface InvoiceReceiptModalProps {
   pago: Pago;
@@ -31,7 +32,7 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
   };
 
   const handleCopyLink = () => {
-    const textToCopy = `Comprobante Nexo Dev Studio #${receiptNumber} - Cliente: ${cliente?.nombre || 'Cliente'} - Monto: $${Number(pago.monto).toLocaleString()} USD`;
+    const textToCopy = `Comprobante Nexo Dev Studio #${receiptNumber} - Cliente: ${cliente?.nombre || 'Cliente'} - Monto: ${formatCOP(pago.monto)}`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -128,10 +129,10 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
               <div className="text-xs font-mono text-slate-400">Recibo de Cobranza</div>
               <div className="text-sm font-bold font-mono text-cyan-400">#{receiptNumber}</div>
               <div className="text-xs text-slate-400 mt-1">
-                Fecha Emisión: <strong className="text-slate-200">{pago.fecha_pago}</strong>
+                Fecha Emisión: <strong className="text-slate-200">{formatDateCO(pago.fecha_pago)}</strong>
               </div>
               <div className="text-xs text-slate-400">
-                Período Facturado: <strong className="text-slate-200">{pago.periodo_mes}</strong>
+                Período Facturado: <strong className="text-slate-200">{formatPeriodCO(pago.periodo_mes)}</strong>
               </div>
             </div>
           </div>
@@ -187,9 +188,9 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
                       {proyecto?.nombre_proyecto || 'Suscripción de Desarrollo'} - Cuota mensual acordada
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-center font-mono">{pago.periodo_mes}</td>
+                  <td className="py-3 px-4 text-center font-mono">{formatPeriodCO(pago.periodo_mes)}</td>
                   <td className="py-3 px-4 text-right font-mono font-bold text-slate-100">
-                    ${Number(pago.monto).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD
+                    {formatCOP(pago.monto)}
                   </td>
                 </tr>
               </tbody>
@@ -207,7 +208,7 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
             <div className="text-right">
               <span className="text-xs text-slate-400 block font-mono">TOTAL ABONADO</span>
               <span className="text-2xl font-black text-cyan-400 font-mono">
-                ${Number(pago.monto).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD
+                {formatCOP(pago.monto)}
               </span>
             </div>
           </div>

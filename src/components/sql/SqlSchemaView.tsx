@@ -1,8 +1,35 @@
 import React, { useState } from 'react';
-import { FileCode2, Copy, Check, Terminal, ExternalLink, ShieldCheck, Database } from 'lucide-react';
+import { FileCode2, Copy, Check, Terminal, ExternalLink, ShieldCheck, Database, Wrench, AlertCircle } from 'lucide-react';
 
-const SQL_SCRIPT_CONTENT = `-- ============================================================================
--- NEXO DEV STUDIO - SCHEMA DE BASE DE DATOS PARA SUPABASE (POSTGRESQL)
+const SQL_MIGRATION_ONLY = `-- ============================================================================
+-- SCRIPT DE MIGRACIÓN Y REPARACIÓN RÁPIDA (SUPABASE SQL EDITOR)
+-- Pega y ejecuta esto si recibiste el error "column tipo_pago does not exist":
+-- ============================================================================
+
+-- 1. Agregar columna tipo_pago a la tabla pagos
+ALTER TABLE public.pagos ADD COLUMN IF NOT EXISTS tipo_pago VARCHAR(30) DEFAULT 'cuota_mensual';
+ALTER TABLE public.pagos DROP CONSTRAINT IF EXISTS pagos_tipo_pago_check;
+ALTER TABLE public.pagos ADD CONSTRAINT pagos_tipo_pago_check CHECK (tipo_pago IN ('cuota_mensual', 'implementacion', 'venta_directa_hito'));
+
+-- 2. Actualizar la tabla proyectos con estados, recursos y modelos de cobro
+ALTER TABLE public.proyectos DROP CONSTRAINT IF EXISTS proyectos_estado_check;
+ALTER TABLE public.proyectos ADD CONSTRAINT proyectos_estado_check CHECK (estado IN ('activo', 'en_desarrollo', 'en_prueba', 'pausado', 'finalizado'));
+
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS modelo_cobro VARCHAR(30) DEFAULT 'mensual_alquiler';
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS valor_total_venta NUMERIC(12, 2) DEFAULT 0.00;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS modalidad_pago_venta VARCHAR(30) DEFAULT 'pago_unico';
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS etapas_pago JSONB DEFAULT '[]'::jsonb;
+
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS dias_prueba SMALLINT DEFAULT 7;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS fecha_fin_prueba DATE DEFAULT NULL;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS valor_implementacion NUMERIC(12, 2) DEFAULT 0.00;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS estado_implementacion VARCHAR(20) DEFAULT 'pendiente';
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS fecha_pago_implementacion DATE DEFAULT NULL;
+
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS recursos_tecnicos JSONB DEFAULT '[]'::jsonb;`;
+
+const SQL_FULL_SCHEMA = `-- ============================================================================
+-- NEXO DEV STUDIO - SCHEMA COMPLETO DE BASE DE DATOS PARA SUPABASE (POSTGRESQL)
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -30,16 +57,30 @@ CREATE TABLE IF NOT EXISTS public.proyectos (
     cliente_id UUID NOT NULL REFERENCES public.clientes(id) ON DELETE CASCADE,
     nombre_proyecto VARCHAR(200) NOT NULL,
     valor_mensual NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_mensual >= 0),
-    dia_cobro SMALLINT NOT NULL DEFAULT 1 CHECK (dia_cobro BETWEEN 1 AND 31),
-    estado VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'pausado', 'finalizado')),
+    dia_cobro SMALLINT NOT NULL DEFAULT 5 CHECK (dia_cobro BETWEEN 1 AND 31),
+    estado VARCHAR(20) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'en_desarrollo', 'en_prueba', 'pausado', 'finalizado')),
     fecha_inicio DATE NOT NULL DEFAULT CURRENT_DATE,
+    
+    modelo_cobro VARCHAR(30) DEFAULT 'mensual_alquiler',
+    valor_total_venta NUMERIC(12, 2) DEFAULT 0.00,
+    modalidad_pago_venta VARCHAR(30) DEFAULT 'pago_unico',
+    etapas_pago JSONB DEFAULT '[]'::jsonb,
+
+    dias_prueba SMALLINT DEFAULT 7,
+    fecha_fin_prueba DATE DEFAULT NULL,
+
+    valor_implementacion NUMERIC(12, 2) DEFAULT 0.00,
+    estado_implementacion VARCHAR(20) DEFAULT 'pendiente',
+    fecha_pago_implementacion DATE DEFAULT NULL,
+
+    recursos_tecnicos JSONB DEFAULT '[]'::jsonb,
+
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
 CREATE INDEX IF NOT EXISTS idx_proyectos_cliente_id ON public.proyectos(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_proyectos_estado ON public.proyectos(estado);
-CREATE INDEX IF NOT EXISTS idx_proyectos_dia_cobro ON public.proyectos(dia_cobro);
 
 -- 3. TABLA: pagos
 CREATE TABLE IF NOT EXISTS public.pagos (
@@ -50,6 +91,7 @@ CREATE TABLE IF NOT EXISTS public.pagos (
     fecha_pago DATE NOT NULL DEFAULT CURRENT_DATE,
     periodo_mes VARCHAR(7) NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pagado', 'pendiente', 'vencido')),
+    tipo_pago VARCHAR(30) DEFAULT 'cuota_mensual',
     comprobante_url TEXT DEFAULT NULL,
     notas TEXT DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
@@ -59,8 +101,6 @@ CREATE TABLE IF NOT EXISTS public.pagos (
 CREATE INDEX IF NOT EXISTS idx_pagos_proyecto_id ON public.pagos(proyecto_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_cliente_id ON public.pagos(cliente_id);
 CREATE INDEX IF NOT EXISTS idx_pagos_estado ON public.pagos(estado);
-CREATE INDEX IF NOT EXISTS idx_pagos_periodo ON public.pagos(periodo_mes);
-CREATE INDEX IF NOT EXISTS idx_pagos_fecha ON public.pagos(fecha_pago);
 
 -- 4. TABLA: notificaciones
 CREATE TABLE IF NOT EXISTS public.notificaciones (
@@ -73,9 +113,6 @@ CREATE TABLE IF NOT EXISTS public.notificaciones (
     referencia_pago_id UUID REFERENCES public.pagos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
-
-CREATE INDEX IF NOT EXISTS idx_notificaciones_cliente ON public.notificaciones(cliente_id);
-CREATE INDEX IF NOT EXISTS idx_notificaciones_tipo ON public.notificaciones(tipo);
 
 -- 5. TRIGGER AUTOMÁTICO PARA UPDATED_AT
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
@@ -90,7 +127,7 @@ CREATE TRIGGER set_updated_at_clientes BEFORE UPDATE ON public.clientes FOR EACH
 CREATE TRIGGER set_updated_at_proyectos BEFORE UPDATE ON public.proyectos FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER set_updated_at_pagos BEFORE UPDATE ON public.pagos FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- 6. POLÍTICAS RLS (Row Level Security)
+-- 6. POLÍTICAS RLS
 ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proyectos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagos ENABLE ROW LEVEL SECURITY;
@@ -102,76 +139,72 @@ CREATE POLICY "Permitir acceso a pagos" ON public.pagos FOR ALL USING (true) WIT
 CREATE POLICY "Permitir acceso a notificaciones" ON public.notificaciones FOR ALL USING (true) WITH CHECK (true);`;
 
 export const SqlSchemaView: React.FC = () => {
-  const [copied, setCopied] = useState(false);
+  const [copiedMigration, setCopiedMigration] = useState(false);
+  const [copiedFull, setCopiedFull] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(SQL_SCRIPT_CONTENT);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  const handleCopyMigration = () => {
+    navigator.clipboard.writeText(SQL_MIGRATION_ONLY);
+    setCopiedMigration(true);
+    setTimeout(() => setCopiedMigration(false), 2500);
+  };
+
+  const handleCopyFull = () => {
+    navigator.clipboard.writeText(SQL_FULL_SCHEMA);
+    setCopiedFull(true);
+    setTimeout(() => setCopiedFull(false), 2500);
   };
 
   return (
     <div className="space-y-6">
-      {/* Intro card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 shadow-xl">
+      {/* Migration Card for existing Supabase DBs */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-slate-900 border border-amber-500/40 shadow-xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Database className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-lg font-bold text-white">Esquema SQL Oficial de Supabase</h2>
+              <Wrench className="w-5 h-5 text-amber-400" />
+              <h2 className="text-base font-bold text-white">
+                Script de Migración & Solución al Error <code className="text-amber-300 font-mono text-xs bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/30">column tipo_pago does not exist</code>
+              </h2>
             </div>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Copia este script completo y pégalo directamente en el <strong>SQL Editor</strong> de tu proyecto en Supabase.
-              Crea las 4 tablas principales con Foreign Keys, índices de alto rendimiento, triggers automáticos para updated_at y políticas de seguridad RLS.
+            <p className="text-xs text-amber-200/90 max-w-2xl">
+              Si tu base de datos en Supabase ya tenía la tabla <code className="font-mono text-cyan-300">pagos</code> creada anteriormente, ejecuta este script en Supabase SQL Editor para agregar la columna <code className="font-mono text-cyan-300">tipo_pago</code> y todos los nuevos campos <strong>sin borrar ningún cliente ni dato existente</strong>.
             </p>
           </div>
 
           <button
-            onClick={handleCopy}
-            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20 transition cursor-pointer"
+            onClick={handleCopyMigration}
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 transition cursor-pointer shrink-0"
           >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            <span>{copied ? '¡Copiado al Portapapeles!' : 'Copiar Script SQL'}</span>
+            {copiedMigration ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span>{copiedMigration ? '¡Script Copiado!' : 'Copiar Script de Migración SQL'}</span>
           </button>
+        </div>
+
+        <div className="mt-4 p-3 rounded-xl bg-slate-950/80 border border-amber-500/20 text-xs font-mono text-amber-300/90 max-h-40 overflow-y-auto">
+          <pre>{SQL_MIGRATION_ONLY}</pre>
         </div>
       </div>
 
-      {/* Guide steps */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-          <div className="flex items-center gap-2 text-cyan-400 font-bold mb-1">
-            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px]">
-              1
-            </span>
-            <span>Abre Supabase</span>
+      {/* Intro card */}
+      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Database className="w-5 h-5 text-cyan-400" />
+              <h2 className="text-lg font-bold text-white">Esquema SQL Completo (Instalación desde Cero)</h2>
+            </div>
+            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
+              Usa este script completo si estás creando una nueva base de datos desde cero en Supabase.
+            </p>
           </div>
-          <p className="text-slate-400">
-            Ingresa a tu panel en <a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-cyan-400 underline">supabase.com</a> y abre tu proyecto.
-          </p>
-        </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-          <div className="flex items-center gap-2 text-cyan-400 font-bold mb-1">
-            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px]">
-              2
-            </span>
-            <span>Pega en SQL Editor</span>
-          </div>
-          <p className="text-slate-400">
-            En la barra lateral izquierda haz clic en <strong>SQL Editor</strong> &gt; <strong>New Query</strong>, pega el código y presiona <strong>RUN</strong>.
-          </p>
-        </div>
-
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold mb-1">
-            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px]">
-              3
-            </span>
-            <span>Conecta en Configuración</span>
-          </div>
-          <p className="text-slate-400">
-            Copia tu <strong>Project URL</strong> y <strong>anon public key</strong> de Project Settings &gt; API y pégalas en la pestaña "Configuración".
-          </p>
+          <button
+            onClick={handleCopyFull}
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20 transition cursor-pointer"
+          >
+            {copiedFull ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span>{copiedFull ? '¡Copiado!' : 'Copiar Esquema Completo'}</span>
+          </button>
         </div>
       </div>
 
@@ -183,16 +216,16 @@ export const SqlSchemaView: React.FC = () => {
             <span>supabase-schema.sql</span>
           </div>
           <button
-            onClick={handleCopy}
+            onClick={handleCopyFull}
             className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copiado' : 'Copiar'}</span>
+            {copiedFull ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedFull ? 'Copiado' : 'Copiar'}</span>
           </button>
         </div>
 
         <div className="p-4 overflow-x-auto max-h-[500px] text-xs font-mono leading-relaxed text-slate-300">
-          <pre>{SQL_SCRIPT_CONTENT}</pre>
+          <pre>{SQL_FULL_SCHEMA}</pre>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { Cliente, Proyecto, Pago } from '../types/database';
 import { getStoredConfig } from '../lib/supabase';
 import { DataService } from './dataService';
+import { formatCOP, formatPeriodCO, formatDateCO } from '../lib/formatters';
 
 export interface MessageTemplateData {
   cliente: Cliente;
@@ -20,9 +21,9 @@ export const NotificationService = {
   getPaymentConfirmationWhatsApp(data: MessageTemplateData): string {
     const config = getStoredConfig();
     const clienteName = data.cliente.nombre.split(' ')[0];
-    const monto = data.pago ? `$${Number(data.pago.monto).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD` : '';
+    const monto = data.pago ? formatCOP(data.pago.monto) : '';
     const proyectoName = data.proyecto?.nombre_proyecto || 'Servicio de Desarrollo';
-    const periodo = data.pago?.periodo_mes || 'vigente';
+    const periodo = data.pago?.periodo_mes ? formatPeriodCO(data.pago.periodo_mes) : 'vigente';
 
     return (
       `🚀 *${config.agencyName}* - *Confirmación de Pago Exitoso*\n\n` +
@@ -40,7 +41,7 @@ export const NotificationService = {
   getReminderWhatsApp(data: MessageTemplateData): string {
     const config = getStoredConfig();
     const clienteName = data.cliente.nombre.split(' ')[0];
-    const monto = data.proyecto ? `$${Number(data.proyecto.valor_mensual).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD` : '';
+    const monto = data.proyecto ? formatCOP(data.proyecto.valor_mensual) : '';
     const proyectoName = data.proyecto?.nombre_proyecto || 'Proyecto en Curso';
     const diaCobro = data.proyecto?.dia_cobro || 1;
 
@@ -60,12 +61,12 @@ export const NotificationService = {
     const config = getStoredConfig();
     const clienteName = data.cliente.nombre.split(' ')[0];
     const monto = data.pago
-      ? `$${Number(data.pago.monto).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD`
+      ? formatCOP(data.pago.monto)
       : data.proyecto
-      ? `$${Number(data.proyecto.valor_mensual).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD`
+      ? formatCOP(data.proyecto.valor_mensual)
       : '';
     const proyectoName = data.proyecto?.nombre_proyecto || 'Servicio de Desarrollo';
-    const periodo = data.pago?.periodo_mes || 'mes anterior';
+    const periodo = data.pago?.periodo_mes ? formatPeriodCO(data.pago.periodo_mes) : 'mes anterior';
 
     return (
       `⚠️ *${config.agencyName}* - *Aviso de Pago Pendiente*\n\n` +
@@ -83,7 +84,7 @@ export const NotificationService = {
   // 2. GENERATE HTML EMAIL TEMPLATES FOR RESEND
   getPaymentConfirmationEmailHTML(data: MessageTemplateData): { subject: string; html: string } {
     const config = getStoredConfig();
-    const monto = data.pago ? `$${Number(data.pago.monto).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD` : '';
+    const monto = data.pago ? formatCOP(data.pago.monto) : '';
     const proyecto = data.proyecto?.nombre_proyecto || 'Servicios Tecnológicos';
     const subject = `Comprobante de Pago Recibido - ${proyecto} [${config.agencyName}]`;
 
@@ -120,8 +121,8 @@ export const NotificationService = {
             
             <div class="receipt-box">
               <div class="row"><span class="label">Proyecto:</span><span class="value">${proyecto}</span></div>
-              <div class="row"><span class="label">Período:</span><span class="value">${data.pago?.periodo_mes || 'Mes en Curso'}</span></div>
-              <div class="row"><span class="label">Fecha de Pago:</span><span class="value">${data.pago?.fecha_pago || new Date().toISOString().split('T')[0]}</span></div>
+              <div class="row"><span class="label">Período:</span><span class="value">${data.pago?.periodo_mes ? formatPeriodCO(data.pago.periodo_mes) : 'Mes en Curso'}</span></div>
+              <div class="row"><span class="label">Fecha de Pago:</span><span class="value">${data.pago?.fecha_pago ? formatDateCO(data.pago.fecha_pago) : formatDateCO(new Date().toISOString())}</span></div>
               <div class="row"><span class="label">ID Transacción:</span><span class="value" style="font-family: monospace;">${(data.pago?.id || '').slice(0, 13)}</span></div>
               <div class="row"><span class="label">Total Abonado:</span><span class="value">${monto}</span></div>
             </div>
@@ -143,7 +144,7 @@ export const NotificationService = {
 
   getReminderEmailHTML(data: MessageTemplateData): { subject: string; html: string } {
     const config = getStoredConfig();
-    const monto = data.proyecto ? `$${Number(data.proyecto.valor_mensual).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD` : '';
+    const monto = data.proyecto ? formatCOP(data.proyecto.valor_mensual) : '';
     const proyecto = data.proyecto?.nombre_proyecto || 'Servicio de Desarrollo';
     const subject = `Aviso Próximo Cobro - ${proyecto} [${config.agencyName}]`;
 
@@ -182,7 +183,7 @@ export const NotificationService = {
 
   getOverdueEmailHTML(data: MessageTemplateData): { subject: string; html: string } {
     const config = getStoredConfig();
-    const monto = data.pago ? `$${Number(data.pago.monto).toLocaleString('es-ES', { minimumFractionDigits: 2 })} USD` : '';
+    const monto = data.pago ? formatCOP(data.pago.monto) : '';
     const proyecto = data.proyecto?.nombre_proyecto || 'Servicio de Desarrollo';
     const subject = `URGENTE: Notificación de Pago Vencido - ${proyecto} [${config.agencyName}]`;
 
@@ -207,7 +208,7 @@ export const NotificationService = {
           
           <div class="alert">
             <p style="margin: 4px 0;"><strong>Proyecto:</strong> ${proyecto}</p>
-            <p style="margin: 4px 0;"><strong>Período:</strong> ${data.pago?.periodo_mes || 'Mes anterior'}</p>
+            <p style="margin: 4px 0;"><strong>Período:</strong> ${data.pago?.periodo_mes ? formatPeriodCO(data.pago.periodo_mes) : 'Mes anterior'}</p>
             <p style="margin: 4px 0;"><strong>Monto Pendiente:</strong> ${monto}</p>
             <p style="margin: 4px 0;"><strong>Estado:</strong> VENCIDO</p>
           </div>

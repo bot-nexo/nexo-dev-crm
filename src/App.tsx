@@ -200,6 +200,7 @@ export default function App() {
                   onOpenNewPayment={() => setPaymentModal({ isOpen: true, payment: null })}
                   onOpenNewClient={() => setClientModal({ isOpen: true, client: null })}
                   onOpenReceipt={(pago) => setReceiptModalPago(pago)}
+                  onRefreshData={loadData}
                 />
               )}
 
@@ -220,6 +221,9 @@ export default function App() {
                   onOpenCreate={() => setProjectModal({ isOpen: true, project: null })}
                   onOpenEdit={(project) => setProjectModal({ isOpen: true, project })}
                   onDeleteProject={handleDeleteProject}
+                  onSaveProjectResources={async (updated) => {
+                    await handleSaveProject(updated);
+                  }}
                   onNewPaymentForProject={(proj) => {
                     setPaymentModal({
                       isOpen: true,
@@ -227,10 +231,11 @@ export default function App() {
                         id: '',
                         proyecto_id: proj.id,
                         cliente_id: proj.cliente_id,
-                        monto: proj.valor_mensual,
+                        monto: proj.valor_mensual || proj.valor_total_venta || 0,
                         fecha_pago: new Date().toISOString().split('T')[0],
                         periodo_mes: new Date().toISOString().slice(0, 7),
                         estado: 'pendiente',
+                        tipo_pago: proj.modelo_cobro === 'venta_directa' ? 'venta_directa_hito' : 'cuota_mensual',
                       },
                     });
                   }}

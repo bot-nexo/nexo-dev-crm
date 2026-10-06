@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Cliente, Proyecto, Pago } from '../../types/database';
 import { NotificationService } from '../../services/notificationService';
+import { formatCOP, formatDateCO, formatPeriodCO } from '../../lib/formatters';
 
 interface ClientDetailModalProps {
   cliente: Cliente;
@@ -122,13 +123,13 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
           <div>
             <span className="text-slate-400 block text-[10px] uppercase">MRR Activo</span>
             <span className="font-mono font-bold text-emerald-400 block">
-              ${mrrActual.toLocaleString()} USD/mes
+              {formatCOP(mrrActual)}/mes
             </span>
           </div>
           <div>
             <span className="text-slate-400 block text-[10px] uppercase">Histórico Pagado</span>
             <span className="font-mono font-bold text-cyan-400 block">
-              ${totalAbonado.toLocaleString()} USD
+              {formatCOP(totalAbonado)}
             </span>
           </div>
         </div>
@@ -181,7 +182,7 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                         Día de cobro: <strong className="text-slate-200">Día {p.dia_cobro}</strong>
                       </span>
                       <span className="font-mono font-bold text-cyan-400">
-                        ${Number(p.valor_mensual).toLocaleString()} USD/m
+                        {formatCOP(p.valor_mensual)}/mes
                       </span>
                     </div>
                   </div>
@@ -228,11 +229,11 @@ export const ClientDetailModal: React.FC<ClientDetailModalProps> = ({
                     {clientPayments.map((pago) => (
                       <tr key={pago.id} className="hover:bg-slate-800/40 transition">
                         <td className="py-2.5 px-3 font-mono font-semibold text-white">
-                          {pago.periodo_mes}
+                          {formatPeriodCO(pago.periodo_mes)}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-400">{pago.fecha_pago}</td>
+                        <td className="py-2.5 px-3 text-slate-400">{formatDateCO(pago.fecha_pago)}</td>
                         <td className="py-2.5 px-3 font-mono font-bold text-cyan-400">
-                          ${Number(pago.monto).toLocaleString()} USD
+                          {formatCOP(pago.monto)}
                         </td>
                         <td className="py-2.5 px-3">
                           <span

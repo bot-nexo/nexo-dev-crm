@@ -1,4 +1,4 @@
-import { Cliente, Proyecto, Pago, Notificacion, FinancialSummary } from '../types/database';
+import { Cliente, Proyecto, Pago, Notificacion, FinancialSummary, RecursoTecnico, EtapaPago } from '../types/database';
 import { getSupabaseClient } from '../lib/supabase';
 
 const STORAGE_KEY_CLIENTES = 'nexo_data_clientes_v1';
@@ -6,154 +6,11 @@ const STORAGE_KEY_PROYECTOS = 'nexo_data_proyectos_v1';
 const STORAGE_KEY_PAGOS = 'nexo_data_pagos_v1';
 const STORAGE_KEY_NOTIFICACIONES = 'nexo_data_notificaciones_v1';
 
-// Seed initial demo data (matching supabase-schema.sql)
-const SEED_CLIENTES: Cliente[] = [
-  {
-    id: 'a0000000-0000-0000-0000-000000000001',
-    nombre: 'Lucas Morales',
-    empresa: 'Aura Fintech',
-    email: 'lucas@aurafintech.io',
-    telefono: '+5491145678901',
-    estado: 'activo',
-    fecha_registro: '2026-01-10T10:00:00Z',
-  },
-  {
-    id: 'a0000000-0000-0000-0000-000000000002',
-    nombre: 'Valeria Rossi',
-    empresa: 'Kroma Digital',
-    email: 'valeria@kromadigital.com',
-    telefono: '+5491198765432',
-    estado: 'activo',
-    fecha_registro: '2026-02-14T14:30:00Z',
-  },
-  {
-    id: 'a0000000-0000-0000-0000-000000000003',
-    nombre: 'Martín Gómez',
-    empresa: 'Vortex Logistics',
-    email: 'mgomez@vortexlog.com',
-    telefono: '+525512345678',
-    estado: 'activo',
-    fecha_registro: '2026-01-20T09:15:00Z',
-  },
-  {
-    id: 'a0000000-0000-0000-0000-000000000004',
-    nombre: 'Camila Benítez',
-    empresa: 'Nova Retail Group',
-    email: 'camila@novaretail.co',
-    telefono: '+573105557890',
-    estado: 'inactivo',
-    fecha_registro: '2026-03-05T11:45:00Z',
-  },
-];
-
-const SEED_PROYECTOS: Proyecto[] = [
-  {
-    id: 'b0000000-0000-0000-0000-000000000001',
-    cliente_id: 'a0000000-0000-0000-0000-000000000001',
-    nombre_proyecto: 'Plataforma Core Banking & API',
-    valor_mensual: 2800,
-    dia_cobro: 5,
-    estado: 'activo',
-    fecha_inicio: '2026-01-15',
-  },
-  {
-    id: 'b0000000-0000-0000-0000-000000000002',
-    cliente_id: 'a0000000-0000-0000-0000-000000000002',
-    nombre_proyecto: 'Desarrollo E-Commerce Headless & PWA',
-    valor_mensual: 1950,
-    dia_cobro: 10,
-    estado: 'activo',
-    fecha_inicio: '2026-03-01',
-  },
-  {
-    id: 'b0000000-0000-0000-0000-000000000003',
-    cliente_id: 'a0000000-0000-0000-0000-000000000003',
-    nombre_proyecto: 'Sistema SaaS de Envíos en Tiempo Real',
-    valor_mensual: 3400,
-    dia_cobro: 1,
-    estado: 'activo',
-    fecha_inicio: '2026-02-10',
-  },
-  {
-    id: 'b0000000-0000-0000-0000-000000000004',
-    cliente_id: 'a0000000-0000-0000-0000-000000000004',
-    nombre_proyecto: 'App Mobile de Fidelización',
-    valor_mensual: 1200,
-    dia_cobro: 20,
-    estado: 'pausado',
-    fecha_inicio: '2026-04-01',
-  },
-];
-
-const SEED_PAGOS: Pago[] = [
-  {
-    id: 'c0000000-0000-0000-0000-000000000001',
-    proyecto_id: 'b0000000-0000-0000-0000-000000000001',
-    cliente_id: 'a0000000-0000-0000-0000-000000000001',
-    monto: 2800,
-    fecha_pago: '2026-10-05',
-    periodo_mes: '2026-10',
-    estado: 'pagado',
-    comprobante_url: 'https://storage.googleapis.com/recibos/recibo-nexo-1001.pdf',
-    notas: 'Pago mensual transferido vía Wise con éxito.',
-  },
-  {
-    id: 'c0000000-0000-0000-0000-000000000002',
-    proyecto_id: 'b0000000-0000-0000-0000-000000000002',
-    cliente_id: 'a0000000-0000-0000-0000-000000000002',
-    monto: 1950,
-    fecha_pago: '2026-10-10',
-    periodo_mes: '2026-10',
-    estado: 'pendiente',
-    comprobante_url: null,
-    notas: 'Cobro programado para el día 10 de octubre.',
-  },
-  {
-    id: 'c0000000-0000-0000-0000-000000000003',
-    proyecto_id: 'b0000000-0000-0000-0000-000000000003',
-    cliente_id: 'a0000000-0000-0000-0000-000000000003',
-    monto: 3400,
-    fecha_pago: '2026-10-01',
-    periodo_mes: '2026-10',
-    estado: 'vencido',
-    comprobante_url: null,
-    notas: 'Factura vencida hace 4 días. Se requiere aviso de mora urgente.',
-  },
-  {
-    id: 'c0000000-0000-0000-0000-000000000004',
-    proyecto_id: 'b0000000-0000-0000-0000-000000000001',
-    cliente_id: 'a0000000-0000-0000-0000-000000000001',
-    monto: 2800,
-    fecha_pago: '2026-09-05',
-    periodo_mes: '2026-09',
-    estado: 'pagado',
-    comprobante_url: 'https://storage.googleapis.com/recibos/recibo-nexo-0901.pdf',
-    notas: 'Mes de septiembre cancelado puntualmente.',
-  },
-];
-
-const SEED_NOTIFICACIONES: Notificacion[] = [
-  {
-    id: 'd0000000-0000-0000-0000-000000000001',
-    cliente_id: 'a0000000-0000-0000-0000-000000000001',
-    tipo: 'whatsapp',
-    mensaje:
-      'Hola Lucas! Desde Nexo Dev Studio confirmamos la recepción de tu pago por $2,800.00 USD correspondiente al periodo 2026-10. ¡Muchas gracias!',
-    fecha_envio: '2026-10-05T10:15:00Z',
-    estado: 'enviado',
-    referencia_pago_id: 'c0000000-0000-0000-0000-000000000001',
-  },
-  {
-    id: 'd0000000-0000-0000-0000-000000000002',
-    cliente_id: 'a0000000-0000-0000-0000-000000000003',
-    tipo: 'email',
-    mensaje:
-      'Estimado Martín Gómez, le recordamos que el abono mensual de Sistema SaaS de Envíos correspondiente a 2026-10 por $3,400.00 USD se encuentra en mora.',
-    fecha_envio: '2026-10-04T09:00:00Z',
-    estado: 'enviado',
-    referencia_pago_id: 'c0000000-0000-0000-0000-000000000003',
-  },
-];
+// Empty seeds - strictly real database data
+const SEED_CLIENTES: Cliente[] = [];
+const SEED_PROYECTOS: Proyecto[] = [];
+const SEED_PAGOS: Pago[] = [];
+const SEED_NOTIFICACIONES: Notificacion[] = [];
 
 // Helper to generate UUIDs
 export function generateUUID(): string {
@@ -168,17 +25,16 @@ export function generateUUID(): string {
 }
 
 // Local storage accessors
-function getLocal<T>(key: string, seed: T[]): T[] {
+function getLocal<T>(key: string, defaultValue: T[] = []): T[] {
   try {
     const item = localStorage.getItem(key);
     if (!item) {
-      localStorage.setItem(key, JSON.stringify(seed));
-      return seed;
+      return defaultValue;
     }
     return JSON.parse(item);
   } catch (e) {
     console.error(`Error reading ${key}:`, e);
-    return seed;
+    return defaultValue;
   }
 }
 
@@ -203,7 +59,7 @@ export const DataService = {
         setLocal(STORAGE_KEY_CLIENTES, data);
         return data as Cliente[];
       }
-      console.warn('Supabase getClientes error, fallback to local:', error);
+      if (error) console.warn('Supabase getClientes error:', error.message);
     }
     return getLocal<Cliente>(STORAGE_KEY_CLIENTES, SEED_CLIENTES);
   },
@@ -226,17 +82,38 @@ export const DataService = {
       try {
         if (isNew) {
           const { data, error } = await client.from('clientes').insert([itemToSave]).select().single();
-          if (!error && data) return data as Cliente;
+          if (error) throw error;
+          if (data) {
+            const list = getLocal<Cliente>(STORAGE_KEY_CLIENTES, []);
+            list.unshift(data as Cliente);
+            setLocal(STORAGE_KEY_CLIENTES, list);
+            return data as Cliente;
+          }
         } else {
           const { data, error } = await client.from('clientes').update(itemToSave).eq('id', itemToSave.id).select().single();
-          if (!error && data) return data as Cliente;
+          if (error) throw error;
+          if (data) {
+            const list = getLocal<Cliente>(STORAGE_KEY_CLIENTES, []);
+            const idx = list.findIndex((c) => c.id === itemToSave.id);
+            if (idx >= 0) list[idx] = data as Cliente;
+            else list.unshift(data as Cliente);
+            setLocal(STORAGE_KEY_CLIENTES, list);
+            return data as Cliente;
+          }
         }
-      } catch (e) {
-        console.warn('Supabase saveCliente failed, continuing locally:', e);
+      } catch (e: any) {
+        console.error('Supabase saveCliente error:', e);
+        // Save locally so the user never loses data
+        const list = getLocal<Cliente>(STORAGE_KEY_CLIENTES, SEED_CLIENTES);
+        const index = list.findIndex((c) => c.id === itemToSave.id);
+        if (index >= 0) list[index] = itemToSave;
+        else list.unshift(itemToSave);
+        setLocal(STORAGE_KEY_CLIENTES, list);
+        return itemToSave;
       }
     }
 
-    // Local fallback
+    // Local storage fallback when offline
     const list = getLocal<Cliente>(STORAGE_KEY_CLIENTES, SEED_CLIENTES);
     const index = list.findIndex((c) => c.id === itemToSave.id);
     if (index >= 0) {
@@ -252,20 +129,20 @@ export const DataService = {
     const client = getSupabaseClient();
     if (client) {
       try {
-        await client.from('clientes').delete().eq('id', id);
-      } catch (e) {
-        console.warn('Supabase delete error:', e);
+        const { error } = await client.from('clientes').delete().eq('id', id);
+        if (error) throw error;
+      } catch (e: any) {
+        console.error('Supabase deleteCliente error:', e);
       }
     }
 
-    const clientes = getLocal<Cliente>(STORAGE_KEY_CLIENTES, SEED_CLIENTES).filter((c) => c.id !== id);
+    const clientes = getLocal<Cliente>(STORAGE_KEY_CLIENTES, []).filter((c) => c.id !== id);
     setLocal(STORAGE_KEY_CLIENTES, clientes);
 
-    // Cascade local delete
-    const proyectos = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, SEED_PROYECTOS).filter((p) => p.cliente_id !== id);
+    const proyectos = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, []).filter((p) => p.cliente_id !== id);
     setLocal(STORAGE_KEY_PROYECTOS, proyectos);
 
-    const pagos = getLocal<Pago>(STORAGE_KEY_PAGOS, SEED_PAGOS).filter((p) => p.cliente_id !== id);
+    const pagos = getLocal<Pago>(STORAGE_KEY_PAGOS, []).filter((p) => p.cliente_id !== id);
     setLocal(STORAGE_KEY_PAGOS, pagos);
 
     return true;
@@ -283,6 +160,7 @@ export const DataService = {
         setLocal(STORAGE_KEY_PROYECTOS, data);
         return data as Proyecto[];
       }
+      if (error) console.warn('Supabase getProyectos error:', error.message);
     }
     return getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, SEED_PROYECTOS);
   },
@@ -290,14 +168,48 @@ export const DataService = {
   async saveProyecto(proyecto: Partial<Proyecto> & { nombre_proyecto: string; cliente_id: string }): Promise<Proyecto> {
     const isNew = !proyecto.id;
     const client = getSupabaseClient();
+
+    // Auto calculate fecha_fin_prueba if estado is en_prueba
+    let diasPrueba = proyecto.dias_prueba != null ? Number(proyecto.dias_prueba) : null;
+    let fechaFinPrueba = proyecto.fecha_fin_prueba || null;
+
+    if (proyecto.estado === 'en_prueba') {
+      diasPrueba = diasPrueba || 7;
+      if (!fechaFinPrueba) {
+        const startStr = proyecto.fecha_inicio || new Date().toISOString().split('T')[0];
+        const [y, m, d] = startStr.split('T')[0].split('-').map(Number);
+        const startDate = new Date(y, m - 1, d);
+        startDate.setDate(startDate.getDate() + diasPrueba);
+        const fy = startDate.getFullYear();
+        const fm = String(startDate.getMonth() + 1).padStart(2, '0');
+        const fd = String(startDate.getDate()).padStart(2, '0');
+        fechaFinPrueba = `${fy}-${fm}-${fd}`;
+      }
+    }
+
     const itemToSave: Proyecto = {
       id: proyecto.id || generateUUID(),
       cliente_id: proyecto.cliente_id,
       nombre_proyecto: proyecto.nombre_proyecto,
-      valor_mensual: Number(proyecto.valor_mensual) || 0,
-      dia_cobro: Math.max(1, Math.min(31, Number(proyecto.dia_cobro) || 1)),
       estado: proyecto.estado || 'activo',
       fecha_inicio: proyecto.fecha_inicio || new Date().toISOString().split('T')[0],
+      
+      modelo_cobro: proyecto.modelo_cobro || 'mensual_alquiler',
+      valor_mensual: Number(proyecto.valor_mensual) || 0,
+      dia_cobro: Math.max(1, Math.min(31, Number(proyecto.dia_cobro) || 5)),
+
+      valor_total_venta: proyecto.valor_total_venta != null ? Number(proyecto.valor_total_venta) : null,
+      modalidad_pago_venta: proyecto.modalidad_pago_venta || null,
+      etapas_pago: proyecto.etapas_pago || null,
+
+      dias_prueba: diasPrueba,
+      fecha_fin_prueba: fechaFinPrueba,
+      valor_implementacion: Number(proyecto.valor_implementacion) || 0,
+      estado_implementacion: proyecto.estado_implementacion || (Number(proyecto.valor_implementacion) > 0 ? 'pendiente' : 'no_aplica'),
+      fecha_pago_implementacion: proyecto.fecha_pago_implementacion || null,
+
+      recursos_tecnicos: proyecto.recursos_tecnicos || [],
+
       updated_at: new Date().toISOString(),
     };
 
@@ -305,13 +217,47 @@ export const DataService = {
       try {
         if (isNew) {
           const { data, error } = await client.from('proyectos').insert([itemToSave]).select().single();
-          if (!error && data) return data as Proyecto;
+          if (error) {
+            // Fallback for missing new columns on older Supabase tables
+            console.warn('Retrying saveProyecto with basic columns due to Supabase error:', error.message);
+            const basicPayload = {
+              id: itemToSave.id,
+              cliente_id: itemToSave.cliente_id,
+              nombre_proyecto: itemToSave.nombre_proyecto,
+              valor_mensual: itemToSave.valor_mensual,
+              dia_cobro: itemToSave.dia_cobro,
+              estado: itemToSave.estado === 'en_desarrollo' || itemToSave.estado === 'en_prueba' ? 'activo' : itemToSave.estado,
+              fecha_inicio: itemToSave.fecha_inicio,
+            };
+            await client.from('proyectos').insert([basicPayload]);
+          } else if (data) {
+            const list = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, []);
+            list.unshift(itemToSave);
+            setLocal(STORAGE_KEY_PROYECTOS, list);
+            return itemToSave;
+          }
         } else {
           const { data, error } = await client.from('proyectos').update(itemToSave).eq('id', itemToSave.id).select().single();
-          if (!error && data) return data as Proyecto;
+          if (error) {
+            console.warn('Retrying updateProyecto with basic columns due to Supabase error:', error.message);
+            const basicPayload = {
+              nombre_proyecto: itemToSave.nombre_proyecto,
+              valor_mensual: itemToSave.valor_mensual,
+              dia_cobro: itemToSave.dia_cobro,
+              fecha_inicio: itemToSave.fecha_inicio,
+            };
+            await client.from('proyectos').update(basicPayload).eq('id', itemToSave.id);
+          } else if (data) {
+            const list = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, []);
+            const idx = list.findIndex((p) => p.id === itemToSave.id);
+            if (idx >= 0) list[idx] = itemToSave;
+            else list.unshift(itemToSave);
+            setLocal(STORAGE_KEY_PROYECTOS, list);
+            return itemToSave;
+          }
         }
-      } catch (e) {
-        console.warn('Supabase saveProyecto failed, local saved:', e);
+      } catch (e: any) {
+        console.error('Supabase saveProyecto exception:', e);
       }
     }
 
@@ -330,16 +276,17 @@ export const DataService = {
     const client = getSupabaseClient();
     if (client) {
       try {
-        await client.from('proyectos').delete().eq('id', id);
-      } catch (e) {
-        console.warn('Supabase deleteProyecto error:', e);
+        const { error } = await client.from('proyectos').delete().eq('id', id);
+        if (error) console.warn('Supabase deleteProyecto warning:', error.message);
+      } catch (e: any) {
+        console.error('Supabase deleteProyecto exception:', e);
       }
     }
 
-    const list = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, SEED_PROYECTOS).filter((p) => p.id !== id);
+    const list = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, []).filter((p) => p.id !== id);
     setLocal(STORAGE_KEY_PROYECTOS, list);
 
-    const pagos = getLocal<Pago>(STORAGE_KEY_PAGOS, SEED_PAGOS).filter((p) => p.proyecto_id !== id);
+    const pagos = getLocal<Pago>(STORAGE_KEY_PAGOS, []).filter((p) => p.proyecto_id !== id);
     setLocal(STORAGE_KEY_PAGOS, pagos);
 
     return true;
@@ -357,6 +304,7 @@ export const DataService = {
         setLocal(STORAGE_KEY_PAGOS, data);
         return data as Pago[];
       }
+      if (error) console.warn('Supabase getPagos error:', error.message);
     }
     return getLocal<Pago>(STORAGE_KEY_PAGOS, SEED_PAGOS);
   },
@@ -372,25 +320,42 @@ export const DataService = {
       fecha_pago: pago.fecha_pago || new Date().toISOString().split('T')[0],
       periodo_mes: pago.periodo_mes || new Date().toISOString().slice(0, 7),
       estado: pago.estado || 'pendiente',
+      tipo_pago: pago.tipo_pago || 'cuota_mensual',
       comprobante_url: pago.comprobante_url || null,
       notas: pago.notas || null,
       updated_at: new Date().toISOString(),
     };
 
+    let savedResult: Pago = itemToSave;
+
     if (client) {
       try {
         if (isNew) {
           const { data, error } = await client.from('pagos').insert([itemToSave]).select().single();
-          if (!error && data) return data as Pago;
+          if (error) {
+            // Handle missing column "tipo_pago" on older Supabase tables
+            console.warn('Retrying savePago without tipo_pago due to Supabase error:', error.message);
+            const { tipo_pago, ...basicPayload } = itemToSave;
+            await client.from('pagos').insert([basicPayload]);
+          } else if (data) {
+            savedResult = data as Pago;
+          }
         } else {
           const { data, error } = await client.from('pagos').update(itemToSave).eq('id', itemToSave.id).select().single();
-          if (!error && data) return data as Pago;
+          if (error) {
+            console.warn('Retrying updatePago without tipo_pago due to Supabase error:', error.message);
+            const { tipo_pago, ...basicPayload } = itemToSave;
+            await client.from('pagos').update(basicPayload).eq('id', itemToSave.id);
+          } else if (data) {
+            savedResult = data as Pago;
+          }
         }
-      } catch (e) {
-        console.warn('Supabase savePago failed, local saved:', e);
+      } catch (e: any) {
+        console.error('Supabase savePago exception:', e);
       }
     }
 
+    // Always update local storage as reliable source of truth
     const list = getLocal<Pago>(STORAGE_KEY_PAGOS, SEED_PAGOS);
     const index = list.findIndex((p) => p.id === itemToSave.id);
     if (index >= 0) {
@@ -399,6 +364,24 @@ export const DataService = {
       list.unshift(itemToSave);
     }
     setLocal(STORAGE_KEY_PAGOS, list);
+
+    // Auto-update project implementation status if payment is of type 'implementacion' and 'pagado'
+    if (itemToSave.tipo_pago === 'implementacion' && itemToSave.estado === 'pagado') {
+      try {
+        const proyectos = await this.getProyectos();
+        const targetProj = proyectos.find((p) => p.id === itemToSave.proyecto_id);
+        if (targetProj) {
+          await this.saveProyecto({
+            ...targetProj,
+            estado_implementacion: 'pagado',
+            fecha_pago_implementacion: itemToSave.fecha_pago,
+          });
+        }
+      } catch (err) {
+        console.warn('Could not auto-update project implementation status:', err);
+      }
+    }
+
     return itemToSave;
   },
 
@@ -406,12 +389,13 @@ export const DataService = {
     const client = getSupabaseClient();
     if (client) {
       try {
-        await client.from('pagos').delete().eq('id', id);
-      } catch (e) {
-        console.warn('Supabase deletePago error:', e);
+        const { error } = await client.from('pagos').delete().eq('id', id);
+        if (error) console.warn('Supabase deletePago warning:', error.message);
+      } catch (e: any) {
+        console.error('Supabase deletePago exception:', e);
       }
     }
-    const list = getLocal<Pago>(STORAGE_KEY_PAGOS, SEED_PAGOS).filter((p) => p.id !== id);
+    const list = getLocal<Pago>(STORAGE_KEY_PAGOS, []).filter((p) => p.id !== id);
     setLocal(STORAGE_KEY_PAGOS, list);
     return true;
   },
@@ -428,6 +412,7 @@ export const DataService = {
         setLocal(STORAGE_KEY_NOTIFICACIONES, data);
         return data as Notificacion[];
       }
+      if (error) console.warn('Supabase getNotificaciones error:', error.message);
     }
     return getLocal<Notificacion>(STORAGE_KEY_NOTIFICACIONES, SEED_NOTIFICACIONES);
   },
@@ -447,8 +432,13 @@ export const DataService = {
     if (client) {
       try {
         const { data, error } = await client.from('notificaciones').insert([itemToSave]).select().single();
-        if (!error && data) return data as Notificacion;
-      } catch (e) {
+        if (!error && data) {
+          const list = getLocal<Notificacion>(STORAGE_KEY_NOTIFICACIONES, []);
+          list.unshift(data as Notificacion);
+          setLocal(STORAGE_KEY_NOTIFICACIONES, list);
+          return data as Notificacion;
+        }
+      } catch (e: any) {
         console.warn('Supabase logNotificacion failed:', e);
       }
     }
@@ -503,13 +493,18 @@ export const DataService = {
   // FINANCIAL SUMMARY COMPUTATION
   calculateFinancialSummary(proyectos: Proyecto[], pagos: Pago[], currentPeriodMonth: string): FinancialSummary {
     const activeProjects = proyectos.filter((p) => p.estado === 'activo');
-    const proyeccionMRR = activeProjects.reduce((sum, p) => sum + (Number(p.valor_mensual) || 0), 0);
-
-    const monthPayments = pagos.filter((p) => p.periodo_mes === currentPeriodMonth);
+    const devProjects = proyectos.filter((p) => p.estado === 'en_desarrollo');
+    const trialProjects = proyectos.filter((p) => p.estado === 'en_prueba');
+    
+    const proyeccionMRR = activeProjects
+      .filter((p) => (p.modelo_cobro || 'mensual_alquiler') === 'mensual_alquiler')
+      .reduce((sum, p) => sum + (Number(p.valor_mensual) || 0), 0);
 
     let totalIngresosMes = 0;
     let totalPendienteMes = 0;
     let totalVencido = 0;
+    let totalIngresosImplementacion = 0;
+    let totalIngresosVentaDirecta = 0;
 
     let pagosCobradosCount = 0;
     let pagosPendientesCount = 0;
@@ -518,12 +513,20 @@ export const DataService = {
     pagos.forEach((p) => {
       const amount = Number(p.monto) || 0;
       if (p.estado === 'pagado') {
-        if (p.periodo_mes === currentPeriodMonth) {
+        if (p.tipo_pago === 'implementacion') {
+          totalIngresosImplementacion += amount;
+          totalIngresosMes += amount;
+          pagosCobradosCount++;
+        } else if (p.tipo_pago === 'venta_directa_hito') {
+          totalIngresosVentaDirecta += amount;
+          totalIngresosMes += amount;
+          pagosCobradosCount++;
+        } else if (p.periodo_mes === currentPeriodMonth) {
           totalIngresosMes += amount;
           pagosCobradosCount++;
         }
       } else if (p.estado === 'pendiente') {
-        if (p.periodo_mes === currentPeriodMonth) {
+        if (p.periodo_mes === currentPeriodMonth || p.tipo_pago === 'implementacion' || p.tipo_pago === 'venta_directa_hito') {
           totalPendienteMes += amount;
           pagosPendientesCount++;
         }
@@ -533,15 +536,61 @@ export const DataService = {
       }
     });
 
+    // Count expired trials
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let pruebasVencidasCount = 0;
+
+    trialProjects.forEach((p) => {
+      const days = p.dias_prueba || 7;
+      let fechaFin = p.fecha_fin_prueba;
+      if (!fechaFin && p.fecha_inicio) {
+        const parts = p.fecha_inicio.split('T')[0].split('-').map(Number);
+        const startDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        startDate.setDate(startDate.getDate() + days);
+        const fy = startDate.getFullYear();
+        const fm = String(startDate.getMonth() + 1).padStart(2, '0');
+        const fd = String(startDate.getDate()).padStart(2, '0');
+        fechaFin = `${fy}-${fm}-${fd}`;
+      }
+      if (fechaFin) {
+        const parts = fechaFin.split('-').map(Number);
+        const finDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        finDate.setHours(0, 0, 0, 0);
+        if (finDate.getTime() < today.getTime()) {
+          pruebasVencidasCount++;
+        }
+      }
+    });
+
+    // Calculate implementation fee metrics
+    let implementacionesPendientesCount = 0;
+    let totalPendienteImplementacion = 0;
+
+    proyectos.forEach((p) => {
+      const implVal = Number(p.valor_implementacion) || 0;
+      if (implVal > 0 && p.estado_implementacion === 'pendiente') {
+        implementacionesPendientesCount++;
+        totalPendienteImplementacion += implVal;
+      }
+    });
+
     const activeClientsSet = new Set(activeProjects.map((p) => p.cliente_id));
 
     return {
       totalIngresosMes,
       totalPendienteMes,
       totalVencido,
+      totalIngresosImplementacion,
+      totalIngresosVentaDirecta,
       proyeccionMensualMRR: proyeccionMRR,
       clientesActivosCount: activeClientsSet.size,
       proyectosActivosCount: activeProjects.length,
+      proyectosEnDesarrolloCount: devProjects.length,
+      proyectosEnPruebaCount: trialProjects.length,
+      pruebasVencidasCount,
+      implementacionesPendientesCount,
+      totalPendienteImplementacion,
       pagosCobradosCount,
       pagosPendientesCount,
       pagosVencidosCount,
@@ -556,10 +605,10 @@ export const DataService = {
     }
 
     try {
-      const clientes = getLocal<Cliente>(STORAGE_KEY_CLIENTES, SEED_CLIENTES);
-      const proyectos = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, SEED_PROYECTOS);
-      const pagos = getLocal<Pago>(STORAGE_KEY_PAGOS, SEED_PAGOS);
-      const notificaciones = getLocal<Notificacion>(STORAGE_KEY_NOTIFICACIONES, SEED_NOTIFICACIONES);
+      const clientes = getLocal<Cliente>(STORAGE_KEY_CLIENTES, []);
+      const proyectos = getLocal<Proyecto>(STORAGE_KEY_PROYECTOS, []);
+      const pagos = getLocal<Pago>(STORAGE_KEY_PAGOS, []);
+      const notificaciones = getLocal<Notificacion>(STORAGE_KEY_NOTIFICACIONES, []);
 
       if (clientes.length) {
         const { error: err1 } = await client.from('clientes').upsert(clientes);
@@ -567,7 +616,6 @@ export const DataService = {
       }
 
       if (proyectos.length) {
-        // Strip hydrated fields
         const cleanProyectos = proyectos.map(({ cliente, ...rest }) => rest);
         const { error: err2 } = await client.from('proyectos').upsert(cleanProyectos);
         if (err2) throw err2;
@@ -600,10 +648,10 @@ export const DataService = {
     }
   },
 
-  async resetToSeedData() {
-    setLocal(STORAGE_KEY_CLIENTES, SEED_CLIENTES);
-    setLocal(STORAGE_KEY_PROYECTOS, SEED_PROYECTOS);
-    setLocal(STORAGE_KEY_PAGOS, SEED_PAGOS);
-    setLocal(STORAGE_KEY_NOTIFICACIONES, SEED_NOTIFICACIONES);
+  async clearLocalCache() {
+    localStorage.removeItem(STORAGE_KEY_CLIENTES);
+    localStorage.removeItem(STORAGE_KEY_PROYECTOS);
+    localStorage.removeItem(STORAGE_KEY_PAGOS);
+    localStorage.removeItem(STORAGE_KEY_NOTIFICACIONES);
   },
 };

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, AlertCircle, DollarSign, Calendar, Layers, User, Send } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, DollarSign, Calendar, Layers, User, Rocket, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { Pago, Cliente, Proyecto, PagoEstado } from '../../types/database';
+import { Pago, Cliente, Proyecto, PagoEstado, TipoPago } from '../../types/database';
 import { NotificationService } from '../../services/notificationService';
+import { formatCOP } from '../../lib/formatters';
 
 interface PaymentFormModalProps {
   initialPayment?: Pago | null;
@@ -23,6 +24,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
 }) => {
   const [proyectoId, setProyectoId] = useState(initialPayment?.proyecto_id || '');
   const [clienteId, setClienteId] = useState(initialPayment?.cliente_id || '');
+  const [tipoPago, setTipoPago] = useState<TipoPago>(initialPayment?.tipo_pago || 'cuota_mensual');
   const [monto, setMonto] = useState(initialPayment ? String(initialPayment.monto) : '');
   const [fechaPago, setFechaPago] = useState(
     initialPayment?.fecha_pago || new Date().toISOString().split('T')[0]
@@ -37,15 +39,29 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Auto-populate client and monthly fee when project changes
+  // Auto-populate client and fee when project or payment type changes
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedProjId = e.target.value;
     setProyectoId(selectedProjId);
     const proj = proyectos.find((p) => p.id === selectedProjId);
     if (proj) {
       setClienteId(proj.cliente_id);
-      if (!monto || monto === '0') {
-        setMonto(String(proj.valor_mensual));
+      if (tipoPago === 'implementacion') {
+        setMonto(String(proj.valor_implementacion || 0));
+      } else {
+        setMonto(String(proj.valor_mensual || 0));
+      }
+    }
+  };
+
+  const handleTipoPagoChange = (newTipo: TipoPago) => {
+    setTipoPago(newTipo);
+    const proj = proyectos.find((p) => p.id === proyectoId);
+    if (proj) {
+      if (newTipo === 'implementacion') {
+        setMonto(String(proj.valor_implementacion || 0));
+      } else {
+        setMonto(String(proj.valor_mensual || 0));
       }
     }
   };
@@ -87,6 +103,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
         id: initialPayment?.id,
         proyecto_id: proyectoId,
         cliente_id: clienteId,
+        tipo_pago: tipoPago,
         monto: numMonto,
         fecha_pago: fechaPago,
         periodo_mes: periodoMes,
@@ -145,7 +162,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -158,6 +175,40 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               <span>{errorMsg}</span>
             </div>
           )}
+
+          {/* Tipo de Pago Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              Tipo de Cobro / Ingreso *
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleTipoPagoChange('cuota_mensual')}
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer ${
+                  tipoPago === 'cuota_mensual'
+                    ? 'bg-cyan-950/60 border-cyan-500 text-cyan-300 shadow-sm'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Cuota Mensual (MRR)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTipoPagoChange('implementacion')}
+                className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer ${
+                  tipoPago === 'implementacion'
+                    ? 'bg-amber-950/60 border-amber-500 text-amber-300 shadow-sm'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Rocket className="w-3.5 h-3.5" />
+                <span>Implementación (Único)</span>
+              </button>
+            </div>
+          </div>
 
           {/* Proyecto Selector */}
           <div>
@@ -174,7 +225,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               <option value="">-- Selecciona el Proyecto --</option>
               {proyectos.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nombre_proyecto} (${Number(p.valor_mensual).toLocaleString()} USD/mes)
+                  {p.nombre_proyecto} ({formatCOP(p.valor_mensual)}/mes - Impl: {formatCOP(p.valor_implementacion || 0)})
                 </option>
               ))}
             </select>
@@ -205,17 +256,17 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Monto (USD) *
+                Monto a Cobrar (COP) *
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-2.5 text-xs text-slate-400 font-mono">$</span>
                 <input
                   type="number"
-                  step="0.01"
+                  step="1"
                   min="0"
                   value={monto}
                   onChange={(e) => setMonto(e.target.value)}
-                  placeholder="2500.00"
+                  placeholder="2500000"
                   className="w-full pl-7 pr-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 transition"
                   required
                 />
@@ -292,7 +343,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
               rows={2}
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
-              placeholder="Transferencia Wise #10294, Stripe, Cripto o Banco Internacional..."
+              placeholder="Transferencia Bancaria (Bancolombia, Nequi), Stripe, etc..."
               className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500 transition resize-none"
             />
           </div>

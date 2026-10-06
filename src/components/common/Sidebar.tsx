@@ -36,24 +36,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       id: 'dashboard' as NavTab,
       label: 'Panel Principal',
+      shortLabel: 'Panel',
       icon: LayoutDashboard,
       badge: null,
     },
     {
       id: 'clientes' as NavTab,
       label: 'Clientes',
+      shortLabel: 'Clientes',
       icon: Users,
       badge: null,
     },
     {
       id: 'proyectos' as NavTab,
-      label: 'Proyectos & MRR',
+      label: 'Proyectos & Recursos',
+      shortLabel: 'Proyectos',
       icon: FolderKanban,
       badge: null,
     },
     {
       id: 'pagos' as NavTab,
       label: 'Pagos & Cobranza',
+      shortLabel: 'Pagos',
       icon: CreditCard,
       badge: pendingAlertsCount > 0 ? `${pendingAlertsCount}` : null,
       badgeColor: 'bg-rose-500 text-white',
@@ -61,19 +65,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       id: 'automatizaciones' as NavTab,
       label: 'Automatizaciones',
+      shortLabel: 'Auto WA',
       icon: Send,
-      badge: 'WhatsApp/Mail',
+      badge: 'WA',
       badgeColor: 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30',
     },
     {
       id: 'reportes' as NavTab,
       label: 'Informes & Métricas',
+      shortLabel: 'Reportes',
       icon: BarChart3,
       badge: null,
     },
     {
       id: 'sql' as NavTab,
       label: 'Esquema SQL Supabase',
+      shortLabel: 'BD SQL',
       icon: FileCode2,
       badge: 'v1.0',
       badgeColor: 'bg-emerald-950 text-emerald-400 border border-emerald-500/30',
@@ -81,6 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       id: 'config' as NavTab,
       label: 'Configuración & Netlify',
+      shortLabel: 'Config',
       icon: Settings,
       badge: null,
     },
@@ -91,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Desktop / Tablet Sidebar */}
       <aside className="hidden lg:flex flex-col w-64 bg-[#090d16] border-r border-slate-800/80 p-4 shrink-0">
         <div className="text-[11px] font-bold text-slate-500 tracking-wider uppercase px-3 mb-2 font-mono">
-          Navegación
+          Navegación CRM
         </div>
         <nav className="space-y-1">
           {navItems.map((item) => {
@@ -130,17 +138,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400">
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-4 h-4 text-cyan-400" />
-              <span className="font-semibold text-slate-200">Supabase + Netlify</span>
+              <span className="font-semibold text-slate-200">Nexo Dev CRM</span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Arquitectura lista para producción y PWA offline con sincronización.
+              100% Adaptable a Celulares, Tablets y Computadores.
             </p>
           </div>
         </div>
       </aside>
 
       {/* Mobile Top Navigation Horizontal Bar */}
-      <div className="lg:hidden flex items-center overflow-x-auto no-scrollbar gap-1.5 px-4 py-2 bg-slate-950 border-b border-slate-800 shrink-0">
+      <div className="lg:hidden flex items-center overflow-x-auto no-scrollbar gap-1.5 px-3 py-2 bg-slate-950 border-b border-slate-800 shrink-0 scroll-smooth touch-pan-x">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -148,14 +156,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => onSelectTab(item.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer shrink-0 ${
                 isActive
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                  : 'text-slate-400 hover:text-slate-200 bg-slate-900/60'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 bg-slate-900/70 border border-slate-800'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{item.label}</span>
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+              <span>{item.shortLabel}</span>
+              {item.badge && (
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-cyan-400 text-slate-950">
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}
