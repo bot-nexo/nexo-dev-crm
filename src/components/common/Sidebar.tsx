@@ -9,6 +9,9 @@ import {
   FileCode2,
   Settings,
   ShieldCheck,
+  Layers,
+  Sparkles,
+  Receipt,
 } from 'lucide-react';
 
 export type NavTab =
@@ -16,6 +19,7 @@ export type NavTab =
   | 'clientes'
   | 'proyectos'
   | 'pagos'
+  | 'suscripciones'
   | 'automatizaciones'
   | 'reportes'
   | 'sql'
@@ -25,12 +29,14 @@ interface SidebarProps {
   currentTab: NavTab;
   onSelectTab: (tab: NavTab) => void;
   pendingAlertsCount: number;
+  upcomingSubsCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onSelectTab,
   pendingAlertsCount,
+  upcomingSubsCount = 0,
 }) => {
   const navItems = [
     {
@@ -61,6 +67,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: CreditCard,
       badge: pendingAlertsCount > 0 ? `${pendingAlertsCount}` : null,
       badgeColor: 'bg-rose-500 text-white',
+    },
+    {
+      id: 'suscripciones' as NavTab,
+      label: 'Suscripciones Startup',
+      shortLabel: 'Suscripciones',
+      icon: Layers,
+      badge: upcomingSubsCount > 0 ? `${upcomingSubsCount}` : 'SaaS',
+      badgeColor: upcomingSubsCount > 0 ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-purple-950/80 text-purple-300 border border-purple-500/30',
     },
     {
       id: 'automatizaciones' as NavTab,

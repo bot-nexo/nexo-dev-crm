@@ -254,7 +254,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataSyncRequested 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Nombre de la Agencia
+                Nombre de la Agencia / Startup
               </label>
               <input
                 type="text"
@@ -266,7 +266,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataSyncRequested 
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Símbolo de Moneda
+                Símbolo de Moneda Principal
               </label>
               <input
                 type="text"
@@ -274,6 +274,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onDataSyncRequested 
                 onChange={(e) => setConfig({ ...config, currencySymbol: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 transition"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Correo del Fundador para Avisos de Suscripciones</span>
+              </label>
+              <input
+                type="email"
+                value={config.founderEmailAlerts || ''}
+                onChange={(e) => setConfig({ ...config, founderEmailAlerts: e.target.value })}
+                placeholder="founder@startup.com"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500 transition"
+              />
+              <p className="text-[11px] text-slate-500 mt-1">
+                A este correo te llegarán las alertas cuando falten días para pagar tus herramientas SaaS.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Tasa de Cambio Referencial USD a COP ($)
+              </label>
+              <input
+                type="number"
+                value={config.usdCopExchangeRate || 4200}
+                onChange={(e) => setConfig({ ...config, usdCopExchangeRate: Number(e.target.value) || 4200 })}
+                placeholder="4200"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white font-mono focus:outline-none focus:border-cyan-500 transition"
+              />
+              <p className="text-[11px] text-slate-500 mt-1">
+                Se usa para convertir los gastos en USD a Pesos Colombianos en las métricas.
+              </p>
             </div>
           </div>
         </div>

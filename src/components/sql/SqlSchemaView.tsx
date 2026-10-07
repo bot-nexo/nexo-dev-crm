@@ -26,7 +26,37 @@ ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS valor_implementacion NUMER
 ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS estado_implementacion VARCHAR(20) DEFAULT 'pendiente';
 ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS fecha_pago_implementacion DATE DEFAULT NULL;
 
-ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS recursos_tecnicos JSONB DEFAULT '[]'::jsonb;`;
+ALTER TABLE public.proyectos ADD COLUMN IF NOT EXISTS recursos_tecnicos JSONB DEFAULT '[]'::jsonb;
+
+-- 3. Crear tabla para suscripciones y herramientas de la startup
+CREATE TABLE IF NOT EXISTS public.suscripciones_startup (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre_servicio VARCHAR(200) NOT NULL,
+    proveedor VARCHAR(150),
+    categoria VARCHAR(50) NOT NULL DEFAULT 'herramientas_dev',
+    estado VARCHAR(30) NOT NULL DEFAULT 'activa',
+    email_cuenta VARCHAR(255) NOT NULL,
+    usuario_login VARCHAR(150),
+    costo NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    moneda VARCHAR(10) NOT NULL DEFAULT 'USD',
+    ciclo_cobro VARCHAR(20) NOT NULL DEFAULT 'mensual',
+    dia_cobro SMALLINT NOT NULL DEFAULT 1,
+    proxima_fecha_pago DATE NOT NULL DEFAULT CURRENT_DATE,
+    metodo_pago VARCHAR(150),
+    auto_renovacion BOOLEAN NOT NULL DEFAULT true,
+    fecha_fin_prueba DATE DEFAULT NULL,
+    dias_prueba SMALLINT DEFAULT NULL,
+    dias_anticipacion_alerta SMALLINT NOT NULL DEFAULT 3,
+    email_notificacion_alerta VARCHAR(255),
+    alerta_activa BOOLEAN NOT NULL DEFAULT true,
+    ultima_alerta_enviada TIMESTAMPTZ DEFAULT NULL,
+    url_panel_gestion TEXT,
+    notas TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.suscripciones_startup ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Permitir acceso completo a suscripciones_startup" ON public.suscripciones_startup FOR ALL USING (true) WITH CHECK (true);`;
 
 const SQL_FULL_SCHEMA = `-- ============================================================================
 -- NEXO DEV STUDIO - SCHEMA COMPLETO DE BASE DE DATOS PARA SUPABASE (POSTGRESQL)
@@ -114,7 +144,38 @@ CREATE TABLE IF NOT EXISTS public.notificaciones (
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
 
--- 5. TRIGGER AUTOMÁTICO PARA UPDATED_AT
+-- 5. TABLA: suscripciones_startup (Herramientas & SaaS)
+CREATE TABLE IF NOT EXISTS public.suscripciones_startup (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre_servicio VARCHAR(200) NOT NULL,
+    proveedor VARCHAR(150),
+    categoria VARCHAR(50) NOT NULL DEFAULT 'herramientas_dev',
+    estado VARCHAR(30) NOT NULL DEFAULT 'activa',
+    email_cuenta VARCHAR(255) NOT NULL,
+    usuario_login VARCHAR(150),
+    costo NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    moneda VARCHAR(10) NOT NULL DEFAULT 'USD',
+    ciclo_cobro VARCHAR(20) NOT NULL DEFAULT 'mensual',
+    dia_cobro SMALLINT NOT NULL DEFAULT 1,
+    proxima_fecha_pago DATE NOT NULL DEFAULT CURRENT_DATE,
+    metodo_pago VARCHAR(150),
+    auto_renovacion BOOLEAN NOT NULL DEFAULT true,
+    fecha_fin_prueba DATE DEFAULT NULL,
+    dias_prueba SMALLINT DEFAULT NULL,
+    dias_anticipacion_alerta SMALLINT NOT NULL DEFAULT 3,
+    email_notificacion_alerta VARCHAR(255),
+    alerta_activa BOOLEAN NOT NULL DEFAULT true,
+    ultima_alerta_enviada TIMESTAMPTZ DEFAULT NULL,
+    url_panel_gestion TEXT,
+    notas TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_suscripciones_estado ON public.suscripciones_startup(estado);
+CREATE INDEX IF NOT EXISTS idx_suscripciones_email ON public.suscripciones_startup(email_cuenta);
+
+-- 6. TRIGGER AUTOMÁTICO PARA UPDATED_AT
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -126,17 +187,20 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER set_updated_at_clientes BEFORE UPDATE ON public.clientes FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER set_updated_at_proyectos BEFORE UPDATE ON public.proyectos FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 CREATE TRIGGER set_updated_at_pagos BEFORE UPDATE ON public.pagos FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+CREATE TRIGGER set_updated_at_suscripciones BEFORE UPDATE ON public.suscripciones_startup FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
--- 6. POLÍTICAS RLS
+-- 7. POLÍTICAS RLS
 ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proyectos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notificaciones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.suscripciones_startup ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Permitir acceso a clientes" ON public.clientes FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Permitir acceso a proyectos" ON public.proyectos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Permitir acceso a pagos" ON public.pagos FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Permitir acceso a notificaciones" ON public.notificaciones FOR ALL USING (true) WITH CHECK (true);`;
+CREATE POLICY "Permitir acceso a notificaciones" ON public.notificaciones FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir acceso a suscripciones_startup" ON public.suscripciones_startup FOR ALL USING (true) WITH CHECK (true);`;
 
 export const SqlSchemaView: React.FC = () => {
   const [copiedMigration, setCopiedMigration] = useState(false);

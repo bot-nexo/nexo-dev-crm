@@ -118,6 +118,78 @@ export interface AppConfig {
   resendFromEmail: string;
   currencySymbol: string;
   agencyName: string;
+  founderEmailAlerts?: string; // Correo del fundador para avisos de pagos de suscripciones
+  usdCopExchangeRate?: number; // Tasa de cambio referencial USD a COP
+}
+
+export type SuscripcionCategoria =
+  | 'ia_apis'
+  | 'infraestructura_cloud'
+  | 'productividad_email'
+  | 'herramientas_dev'
+  | 'diseno_frontend'
+  | 'marketing_dominios'
+  | 'seguridad_vpn'
+  | 'otros';
+
+export type SuscripcionEstado =
+  | 'activa'
+  | 'en_prueba'
+  | 'por_renovar'
+  | 'pausada'
+  | 'cancelada';
+
+export type SuscripcionCiclo = 'mensual' | 'anual' | 'trimestral' | 'semanal';
+export type MonedaTipo = 'USD' | 'COP' | 'EUR';
+
+export interface SuscripcionStartup {
+  id: string;
+  nombre_servicio: string;
+  proveedor?: string;
+  categoria: SuscripcionCategoria;
+  estado: SuscripcionEstado;
+  
+  // Cuenta y Acceso
+  email_cuenta: string; // Correo en el que está registrada la cuenta
+  usuario_login?: string; // Nombre de usuario o identificador de acceso
+  
+  // Costos y facturación
+  costo: number;
+  moneda: MonedaTipo;
+  ciclo_cobro: SuscripcionCiclo;
+  dia_cobro: number; // 1 a 31
+  proxima_fecha_pago: string; // YYYY-MM-DD
+  metodo_pago?: string; // Ej: "Tarjeta Débito Corp *4891", "PayPal Tech", "Stripe"
+  auto_renovacion: boolean;
+  
+  // Pruebas / Trials
+  fecha_fin_prueba?: string | null;
+  dias_prueba?: number | null;
+  
+  // Configuración de alertas
+  dias_anticipacion_alerta: number; // Ej: 3 días antes
+  email_notificacion_alerta: string; // Correo donde desea recibir la alerta (ej: founder@startup.com)
+  alerta_activa: boolean;
+  ultima_alerta_enviada?: string | null;
+  
+  // Enlaces & Notas
+  url_panel_gestion?: string; // URL directa para entrar a cancelar/pagar/modificar plan
+  notas?: string | null;
+  
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SuscripcionesSummary {
+  totalGastoMensualUSD: number;
+  totalGastoMensualCOP: number;
+  totalGastoAnualUSD: number;
+  totalGastoAnualCOP: number;
+  suscripcionesActivasCount: number;
+  suscripcionesTrialCount: number;
+  suscripcionesPorPagarProximasCount: number; // En los próximos 7 días
+  suscripcionesVencidasHoyCount: number;
+  cuentasEmailsUnicasCount: number;
 }
 
 export interface FinancialSummary {

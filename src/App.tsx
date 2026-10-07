@@ -11,12 +11,13 @@ import { ProjectFormModal } from './components/projects/ProjectFormModal';
 import { PaymentList } from './components/payments/PaymentList';
 import { PaymentFormModal } from './components/payments/PaymentFormModal';
 import { InvoiceReceiptModal } from './components/payments/InvoiceReceiptModal';
+import { SubscriptionDashboard } from './components/subscriptions/SubscriptionDashboard';
 import { AutomationsCenter } from './components/automations/AutomationsCenter';
 import { ReportsView } from './components/reports/ReportsView';
 import { SqlSchemaView } from './components/sql/SqlSchemaView';
 import { SettingsView } from './components/settings/SettingsView';
 
-import { Cliente, Proyecto, Pago, Notificacion, PagoEstado } from './types/database';
+import { Cliente, Proyecto, Pago, Notificacion, PagoEstado, SuscripcionStartup } from './types/database';
 import { DataService } from './services/dataService';
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
   const [proyectos, setProyectos] = useState<Proyecto[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
+  const [suscripciones, setSuscripciones] = useState<SuscripcionStartup[]>([]);
 
   // Modal States
   const [clientModal, setClientModal] = useState<{ isOpen: boolean; client?: Cliente | null }>({
@@ -61,6 +63,7 @@ export default function App() {
       setProyectos(data.proyectos);
       setPagos(data.pagos);
       setNotificaciones(data.notificaciones);
+      setSuscripciones(data.suscripciones || []);
     } catch (e) {
       console.error('Error loading CRM data:', e);
     } finally {
@@ -95,6 +98,24 @@ export default function App() {
     ).length;
     return overdueCount + upcomingCount;
   }, [pagos, proyectos]);
+
+  // Upcoming subscription payments count in next 3 days
+  const upcomingSubsCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return suscripciones.filter((s) => {
+      if (s.estado !== 'activa' && s.estado !== 'en_prueba' && s.estado !== 'por_renovar') return false;
+      const targetDateStr = s.estado === 'en_prueba' && s.fecha_fin_prueba ? s.fecha_fin_prueba : s.proxima_fecha_pago;
+      if (!targetDateStr) return false;
+      const parts = targetDateStr.split('T')[0].split('-').map(Number);
+      if (parts.length !== 3) return false;
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      d.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 3;
+    }).length;
+  }, [suscripciones]);
 
   // Client CRUD Handlers
   const handleSaveClient = async (
@@ -179,6 +200,7 @@ export default function App() {
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
           pendingAlertsCount={pendingAlertsCount}
+          upcomingSubsCount={upcomingSubsCount}
         />
 
         <main className="flex-1 min-w-0 w-full overflow-y-auto p-3 sm:p-6 lg:p-8">
@@ -197,9 +219,11 @@ export default function App() {
                   clientes={clientes}
                   proyectos={proyectos}
                   pagos={pagos}
+                  suscripciones={suscripciones}
                   onOpenNewPayment={() => setPaymentModal({ isOpen: true, payment: null })}
                   onOpenNewClient={() => setClientModal({ isOpen: true, client: null })}
                   onOpenReceipt={(pago) => setReceiptModalPago(pago)}
+                  onNavigateToTab={(tab) => setCurrentTab(tab)}
                   onRefreshData={loadData}
                 />
               )}
@@ -252,6 +276,13 @@ export default function App() {
                   onOpenReceipt={(pago) => setReceiptModalPago(pago)}
                   onDeletePago={handleDeletePayment}
                   onUpdatePagoStatus={handleUpdatePaymentStatus}
+                />
+              )}
+
+              {currentTab === 'suscripciones' && (
+                <SubscriptionDashboard
+                  suscripciones={suscripciones}
+                  onRefreshData={loadData}
                 />
               )}
 

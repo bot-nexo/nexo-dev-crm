@@ -122,7 +122,53 @@ CREATE INDEX IF NOT EXISTS idx_notificaciones_tipo ON public.notificaciones(tipo
 CREATE INDEX IF NOT EXISTS idx_notificaciones_fecha ON public.notificaciones(fecha_envio DESC);
 
 -- ----------------------------------------------------------------------------
--- 5. TRIGGER AUTOMÁTICO PARA UPDATED_AT
+-- 5. TABLA: suscripciones_startup (Herramientas & Costos SaaS de la Startup)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.suscripciones_startup (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre_servicio VARCHAR(200) NOT NULL,
+    proveedor VARCHAR(150),
+    categoria VARCHAR(50) NOT NULL DEFAULT 'herramientas_dev',
+    estado VARCHAR(30) NOT NULL DEFAULT 'activa' CHECK (estado IN ('activa', 'en_prueba', 'por_renovar', 'pausada', 'cancelada')),
+    
+    -- Cuenta y Email asociado
+    email_cuenta VARCHAR(255) NOT NULL,
+    usuario_login VARCHAR(150),
+    
+    -- Facturación y costos
+    costo NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (costo >= 0),
+    moneda VARCHAR(10) NOT NULL DEFAULT 'USD' CHECK (moneda IN ('USD', 'COP', 'EUR')),
+    ciclo_cobro VARCHAR(20) NOT NULL DEFAULT 'mensual' CHECK (ciclo_cobro IN ('mensual', 'anual', 'trimestral', 'semanal')),
+    dia_cobro SMALLINT NOT NULL DEFAULT 1 CHECK (dia_cobro BETWEEN 1 AND 31),
+    proxima_fecha_pago DATE NOT NULL DEFAULT CURRENT_DATE,
+    metodo_pago VARCHAR(150),
+    auto_renovacion BOOLEAN NOT NULL DEFAULT true,
+
+    -- Pruebas (Trials)
+    fecha_fin_prueba DATE DEFAULT NULL,
+    dias_prueba SMALLINT DEFAULT NULL,
+
+    -- Alertas por correo
+    dias_anticipacion_alerta SMALLINT NOT NULL DEFAULT 3,
+    email_notificacion_alerta VARCHAR(255),
+    alerta_activa BOOLEAN NOT NULL DEFAULT true,
+    ultima_alerta_enviada TIMESTAMPTZ DEFAULT NULL,
+
+    -- Enlaces y Notas
+    url_panel_gestion TEXT,
+    notas TEXT,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- Índices de suscripciones
+CREATE INDEX IF NOT EXISTS idx_suscripciones_estado ON public.suscripciones_startup(estado);
+CREATE INDEX IF NOT EXISTS idx_suscripciones_email_cuenta ON public.suscripciones_startup(email_cuenta);
+CREATE INDEX IF NOT EXISTS idx_suscripciones_proxima_fecha ON public.suscripciones_startup(proxima_fecha_pago);
+
+-- ----------------------------------------------------------------------------
+-- 6. TRIGGER AUTOMÁTICO PARA UPDATED_AT
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER AS $$
@@ -147,13 +193,19 @@ CREATE TRIGGER set_updated_at_pagos
     BEFORE UPDATE ON public.pagos
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS set_updated_at_suscripciones ON public.suscripciones_startup;
+CREATE TRIGGER set_updated_at_suscripciones
+    BEFORE UPDATE ON public.suscripciones_startup
+    FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
 -- ----------------------------------------------------------------------------
--- 6. POLÍTICAS DE SEGURIDAD (ROW LEVEL SECURITY - RLS)
+-- 7. POLÍTICAS DE SEGURIDAD (ROW LEVEL SECURITY - RLS)
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.clientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proyectos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pagos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notificaciones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.suscripciones_startup ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Permitir acceso completo a clientes" ON public.clientes
     FOR ALL USING (true) WITH CHECK (true);
@@ -165,4 +217,7 @@ CREATE POLICY "Permitir acceso completo a pagos" ON public.pagos
     FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Permitir acceso completo a notificaciones" ON public.notificaciones
+    FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Permitir acceso completo a suscripciones_startup" ON public.suscripciones_startup
     FOR ALL USING (true) WITH CHECK (true);

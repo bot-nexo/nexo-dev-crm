@@ -18,6 +18,7 @@ import {
   Gift,
   Rocket,
   Zap,
+  CreditCard,
 } from 'lucide-react';
 import {
   BarChart,
@@ -30,7 +31,8 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Cliente, Proyecto, Pago, FinancialSummary } from '../../types/database';
+import { Cliente, Proyecto, Pago, FinancialSummary, SuscripcionStartup } from '../../types/database';
+import { NavTab } from '../common/Sidebar';
 import { NotificationService } from '../../services/notificationService';
 import { formatCOP, formatDateCO, formatPeriodCO, getTrialInfo } from '../../lib/formatters';
 
@@ -39,9 +41,11 @@ interface DashboardOverviewProps {
   clientes: Cliente[];
   proyectos: Proyecto[];
   pagos: Pago[];
+  suscripciones?: SuscripcionStartup[];
   onOpenNewPayment: () => void;
   onOpenNewClient: () => void;
   onOpenReceipt: (pago: Pago) => void;
+  onNavigateToTab?: (tab: NavTab) => void;
   onRefreshData?: () => Promise<void>;
 }
 
@@ -50,9 +54,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   clientes,
   proyectos,
   pagos,
+  suscripciones = [],
   onOpenNewPayment,
   onOpenNewClient,
   onOpenReceipt,
+  onNavigateToTab,
   onRefreshData,
 }) => {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -420,6 +426,36 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* STARTUP SAAS SUBSCRIPTIONS OVERVIEW WIDGET */}
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-purple-950/20 to-slate-900 border border-purple-500/30 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/30 text-purple-400 shrink-0 shadow-inner">
+            <CreditCard className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white">Suscripciones & Herramientas de la Startup</h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                {suscripciones.length} herramientas
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Registra qué suscripciones tienes, su estado, cuenta vinculada (email) y alertas de cobro.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => onNavigateToTab?.('suscripciones')}
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition cursor-pointer flex items-center gap-1.5"
+          >
+            <span>Ver Panel de Suscripciones</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
