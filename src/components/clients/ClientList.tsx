@@ -14,12 +14,16 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
+  Download,
 } from 'lucide-react';
-import { Cliente, ClienteEstado } from '../../types/database';
+import { Cliente, ClienteEstado, Proyecto, Pago } from '../../types/database';
 import { NotificationService } from '../../services/notificationService';
+import { ExportService } from '../../services/exportService';
 
 interface ClientListProps {
   clientes: Cliente[];
+  proyectos?: Proyecto[];
+  pagos?: Pago[];
   onOpenCreate: () => void;
   onOpenEdit: (cliente: Cliente) => void;
   onOpenDetail: (cliente: Cliente) => void;
@@ -28,6 +32,8 @@ interface ClientListProps {
 
 export const ClientList: React.FC<ClientListProps> = ({
   clientes,
+  proyectos = [],
+  pagos = [],
   onOpenCreate,
   onOpenEdit,
   onOpenDetail,
@@ -102,13 +108,24 @@ export const ClientList: React.FC<ClientListProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onOpenCreate}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Cliente</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => ExportService.exportClientesToCSV(filteredClientes, proyectos, pagos)}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+            title="Exportar cartera de clientes a CSV para Excel"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Exportar CSV</span>
+          </button>
+
+          <button
+            onClick={onOpenCreate}
+            className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nuevo Cliente</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Toolbar */}

@@ -206,6 +206,8 @@ export default function App() {
               {currentTab === 'clientes' && (
                 <ClientList
                   clientes={clientes}
+                  proyectos={proyectos}
+                  pagos={pagos}
                   onOpenCreate={() => setClientModal({ isOpen: true, client: null })}
                   onOpenEdit={(client) => setClientModal({ isOpen: true, client })}
                   onOpenDetail={(client) => setDetailClient(client)}
@@ -266,6 +268,7 @@ export default function App() {
                   clientes={clientes}
                   proyectos={proyectos}
                   pagos={pagos}
+                  notificaciones={notificaciones}
                 />
               )}
 

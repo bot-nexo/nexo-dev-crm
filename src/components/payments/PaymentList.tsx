@@ -17,9 +17,12 @@ import {
   ChevronRight,
   ArrowUpDown,
   Filter,
+  Download,
 } from 'lucide-react';
 import { Pago, PagoEstado, Cliente, Proyecto } from '../../types/database';
 import { NotificationService } from '../../services/notificationService';
+import { PdfService } from '../../services/pdfService';
+import { ExportService } from '../../services/exportService';
 
 interface PaymentListProps {
   pagos: Pago[];
@@ -196,13 +199,24 @@ export const PaymentList: React.FC<PaymentListProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onOpenCreate}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Registrar Nuevo Pago</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => ExportService.exportPagosToCSV(filteredPagos, 'listado')}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
+            title="Exportar pagos visibles a CSV para Excel"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Exportar CSV</span>
+          </button>
+
+          <button
+            onClick={onOpenCreate}
+            className="flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Registrar Nuevo Pago</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -384,6 +398,15 @@ export const PaymentList: React.FC<PaymentListProps> = ({
                         >
                           <FileText className="w-3.5 h-3.5 text-cyan-400" />
                           <span>Recibo</span>
+                        </button>
+
+                        <button
+                          onClick={() => PdfService.downloadReceiptPdf({ pago, cliente: pago.cliente, proyecto: pago.proyecto })}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-lg bg-cyan-950/70 hover:bg-cyan-900/90 text-cyan-300 border border-cyan-500/30 transition cursor-pointer"
+                          title="Descargar comprobante en PDF oficial"
+                        >
+                          <Download className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>PDF</span>
                         </button>
 
                         <button

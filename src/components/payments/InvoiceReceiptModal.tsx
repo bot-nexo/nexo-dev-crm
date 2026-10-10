@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Printer, Send, Mail, CheckCircle2, Copy, Check, FileText } from 'lucide-react';
+import { X, Printer, Send, Mail, CheckCircle2, Copy, Check, FileText, Download } from 'lucide-react';
 import { Pago, Cliente, Proyecto } from '../../types/database';
 import { NotificationService } from '../../services/notificationService';
+import { PdfService } from '../../services/pdfService';
 import { getStoredConfig } from '../../lib/supabase';
 
 interface InvoiceReceiptModalProps {
@@ -26,6 +27,16 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
 
   const receiptNumber = `NX-${pago.periodo_mes?.replace('-', '') || '202610'}-${pago.id.slice(0, 4).toUpperCase()}`;
 
+  const handleDownloadPdf = () => {
+    try {
+      PdfService.downloadReceiptPdf({ pago, cliente, proyecto });
+      setActionMessage('¡Comprobante PDF oficial generado y descargado exitosamente!');
+      setTimeout(() => setActionMessage(null), 4000);
+    } catch (err: any) {
+      setActionMessage(`Error al generar el PDF: ${err.message}`);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -36,6 +47,7 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
 
   const handleSendWhatsApp = () => {
     if (!cliente) return;
@@ -80,16 +92,24 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
+              onClick={handleDownloadPdf}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-md shadow-cyan-600/20 transition cursor-pointer"
+              title="Descargar comprobante oficial en archivo PDF"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Descargar PDF</span>
+            </button>
+            <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
-              title="Imprimir o guardar como PDF"
+              title="Imprimir vía navegador"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Imprimir / PDF</span>
+              <span>Imprimir</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -226,13 +246,23 @@ export const InvoiceReceiptModal: React.FC<InvoiceReceiptModalProps> = ({
 
         {/* Action Buttons Footer (hidden on print) */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 bg-slate-950 border-t border-slate-800 print:hidden">
-          <button
-            onClick={handleCopyLink}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copiado' : 'Copiar Resumen'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadPdf}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-md shadow-cyan-600/20 transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Descargar PDF</span>
+            </button>
+
+            <button
+              onClick={handleCopyLink}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copiado' : 'Copiar Resumen'}</span>
+            </button>
+          </div>
 
           <div className="flex items-center gap-2">
             <button

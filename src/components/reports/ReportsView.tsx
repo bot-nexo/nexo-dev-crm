@@ -10,6 +10,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Building,
+  FileSpreadsheet,
+  HardDrive,
+  FileText,
+  Sparkles,
 } from 'lucide-react';
 import {
   BarChart,
@@ -22,21 +26,59 @@ import {
   Line,
   CartesianGrid,
 } from 'recharts';
-import { Cliente, Proyecto, Pago } from '../../types/database';
+import { Cliente, Proyecto, Pago, Notificacion } from '../../types/database';
+import { ExportService } from '../../services/exportService';
 
 interface ReportsViewProps {
   clientes: Cliente[];
   proyectos: Proyecto[];
   pagos: Pago[];
+  notificaciones?: Notificacion[];
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
   clientes,
   proyectos,
   pagos,
+  notificaciones = [],
 }) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('todos');
   const [selectedPeriodRange, setSelectedPeriodRange] = useState<'all' | '2026' | 'q3' | 'q4'>('all');
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
+
+  const showFeedback = (msg: string) => {
+    setExportFeedback(msg);
+    setTimeout(() => setExportFeedback(null), 4000);
+  };
+
+  // Export handlers
+  const handleExportPagos = () => {
+    ExportService.exportPagosToCSV(
+      filteredPagos,
+      selectedProjectId !== 'todos' ? 'filtrado' : 'completo'
+    );
+    showFeedback('¡Archivo CSV de Pagos y Cobranzas generado con codificación Excel UTF-8!');
+  };
+
+  const handleExportClientes = () => {
+    ExportService.exportClientesToCSV(clientes, proyectos, pagos);
+    showFeedback('¡Archivo CSV de Cartera de Clientes & MRR generado exitosamente!');
+  };
+
+  const handleExportConciliacion = () => {
+    ExportService.exportConciliacionToCSV(pagos, proyectos);
+    showFeedback('¡Informe de Conciliación Mensual exportado a CSV exitosamente!');
+  };
+
+  const handleExportBackup = () => {
+    ExportService.exportBackupJSON(clientes, proyectos, pagos, notificaciones);
+    showFeedback('¡Copia de seguridad completa del CRM en formato JSON generada con éxito!');
+  };
+
+  const handlePrintPDF = () => {
+    window.print();
+  };
+
 
   // Filtered payments based on project & date range
   const filteredPagos = useMemo(() => {
@@ -107,67 +149,91 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }, [filteredPagos]);
 
-  // Export to CSV
-  const handleExportCSV = () => {
-    const headers = ['ID', 'Cliente', 'Empresa', 'Proyecto', 'Monto USD', 'Fecha Pago', 'Periodo', 'Estado', 'Notas'];
-    const rows = filteredPagos.map((p) => [
-      p.id,
-      `"${p.cliente?.nombre || ''}"`,
-      `"${p.cliente?.empresa || ''}"`,
-      `"${p.proyecto?.nombre_proyecto || ''}"`,
-      p.monto,
-      p.fecha_pago,
-      p.periodo_mes,
-      p.estado,
-      `"${(p.notas || '').replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `reporte-nexo-dev-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handlePrintPDF = () => {
-    window.print();
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header and Export Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
-        <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-cyan-400" />
-            <span>Informes Financieros & Cumplimiento</span>
-          </h2>
-          <p className="text-xs text-slate-400">
-            Análisis de ingresos recurrentes, cobranzas por proyecto y tasa de morosidad
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Exportar CSV</span>
-          </button>
+      {/* Header and Export Hub */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-slate-800 shadow-xl space-y-4 print:hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-cyan-400" />
+              <span>Informes Financieros, Exportación & Auditoría</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Descarga reportes contables compatibles con Excel en formato CSV y respaldos completos del CRM.
+            </p>
+          </div>
 
           <button
             onClick={handlePrintPDF}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer"
           >
-            <Printer className="w-3.5 h-3.5" />
-            <span>Imprimir / PDF</span>
+            <Printer className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Imprimir Vista</span>
           </button>
         </div>
+
+        {/* Export Buttons Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-800/80">
+          <button
+            onClick={handleExportPagos}
+            className="flex items-center justify-between p-3 rounded-xl bg-slate-950 hover:bg-cyan-950/40 border border-slate-800 hover:border-cyan-500/50 transition cursor-pointer group text-left"
+          >
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-cyan-300">
+                Cobranzas & Pagos
+              </div>
+              <div className="text-[10px] text-slate-400">CSV con importes y fechas</div>
+            </div>
+            <FileSpreadsheet className="w-4 h-4 text-cyan-400 shrink-0" />
+          </button>
+
+          <button
+            onClick={handleExportClientes}
+            className="flex items-center justify-between p-3 rounded-xl bg-slate-950 hover:bg-blue-950/40 border border-slate-800 hover:border-blue-500/50 transition cursor-pointer group text-left"
+          >
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-blue-300">
+                Cartera & MRR
+              </div>
+              <div className="text-[10px] text-slate-400">CSV de clientes y contratos</div>
+            </div>
+            <Building className="w-4 h-4 text-blue-400 shrink-0" />
+          </button>
+
+          <button
+            onClick={handleExportConciliacion}
+            className="flex items-center justify-between p-3 rounded-xl bg-slate-950 hover:bg-emerald-950/40 border border-slate-800 hover:border-emerald-500/50 transition cursor-pointer group text-left"
+          >
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-emerald-300">
+                Conciliación Mensual
+              </div>
+              <div className="text-[10px] text-slate-400">CSV de tasas de cobranza</div>
+            </div>
+            <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0" />
+          </button>
+
+          <button
+            onClick={handleExportBackup}
+            className="flex items-center justify-between p-3 rounded-xl bg-slate-950 hover:bg-purple-950/40 border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group text-left"
+          >
+            <div>
+              <div className="text-xs font-bold text-white group-hover:text-purple-300">
+                Respaldo Completo
+              </div>
+              <div className="text-[10px] text-slate-400">JSON con base de datos total</div>
+            </div>
+            <HardDrive className="w-4 h-4 text-purple-400 shrink-0" />
+          </button>
+        </div>
+
+        {exportFeedback && (
+          <div className="p-3 rounded-xl bg-cyan-950/90 border border-cyan-500/50 text-xs text-cyan-200 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span>{exportFeedback}</span>
+          </div>
+        )}
       </div>
 
       {/* Filter Bar (hidden on print) */}

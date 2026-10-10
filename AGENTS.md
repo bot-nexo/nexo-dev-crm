@@ -96,3 +96,12 @@ src/
 2. **Tipografía:** `Plus Jakarta Sans` para look fintech moderno y legible.
 3. **Micro-interacciones:** Notificaciones toast y badges de estado (`activo`, `inactivo`, `pagado`, `pendiente`, `vencido`) con contrastes legibles.
 4. **Respeto a componentes existentes:** No sobreescribir estilos globales sin justificación técnica.
+
+---
+
+## 6. Bitácora y Continuidad del Proyecto
+
+- **Archivo Maestro de Contexto:** [BITACORA.md](file:///c:/JDV/01_Development/FullStack/nexo-dev-crm/BITACORA.md).
+- **Obligación:**
+  - Consultar `BITACORA.md` para entender el estado del desarrollo, qué está construido y qué falta.
+  - Al completar un hito, cambio arquitectónico o nueva funcionalidad, actualizar inmediatamente la sección correspondiente y registrar el cambio en la tabla de hitos (ADR).

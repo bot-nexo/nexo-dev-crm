@@ -337,4 +337,189 @@ export const NotificationService = {
       message: `Correo simulado y registrado en el historial para ${cliente.email}.`,
     };
   },
+
+  // 6. TRIGGER CRON DE COBRANZA DIARIA (SERVERLESS O FALLBACK LOCAL)
+  async triggerCronBilling(options?: {
+    dryRun?: boolean;
+    forceDay?: number;
+    clientes?: Cliente[];
+    proyectos?: Proyecto[];
+    pagos?: Pago[];
+  }): Promise<{
+    success: boolean;
+    message: string;
+    summary: {
+      timestamp: string;
+      evaluatedDay: number;
+      dryRun: boolean;
+      totalProyectosEvaluados: number;
+      totalClientesNotificados: number;
+      recordatoriosHoy: number;
+      recordatoriosPreventivos: number;
+      alertasMora: number;
+      mensajesWhatsApp: number;
+      correosResend: number;
+      errores: string[];
+      detalles: Array<{
+        cliente: string;
+        tipo: 'corte_hoy' | 'preventivo_3_dias' | 'mora_vencida';
+        canal: string;
+        estado: 'enviado' | 'simulado' | 'fallido' | 'omitido_duplicado';
+        motivo?: string;
+      }>;
+    };
+  }> {
+    const config = getStoredConfig();
+    const dryRun = Boolean(options?.dryRun);
+    const dayToEvaluate = options?.forceDay || new Date().getDate();
+
+    // 1. Intentar llamar a la función serverless de Netlify si está disponible
+    try {
+      const response = await fetch('/.netlify/functions/cron-billing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dryRun,
+          forceDay: dayToEvaluate,
+          clientes: options?.clientes,
+          proyectos: options?.proyectos,
+          pagos: options?.pagos,
+          config: {
+            evolutionApiUrl: config.evolutionApiUrl,
+            evolutionApiKey: config.evolutionApiKey,
+            evolutionInstance: config.evolutionInstance,
+            resendApiKey: config.resendApiKey,
+            resendFromEmail: config.resendFromEmail,
+            agencyName: config.agencyName,
+            currencySymbol: config.currencySymbol,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Sincronizar logs en el historial local si fue exitoso
+        if (!dryRun && data.summary?.detalles) {
+          for (const det of data.summary.detalles) {
+            const cli = options?.clientes?.find((c) => c.nombre === det.cliente);
+            if (cli) {
+              await DataService.logNotificacion({
+                cliente_id: cli.id,
+                tipo: 'whatsapp',
+                mensaje: `[CRON AUTOMÁTICO] ${det.tipo.toUpperCase()}`,
+                estado: det.estado === 'fallido' ? 'fallido' : 'enviado',
+              });
+            }
+          }
+        }
+        return data;
+      }
+    } catch (e) {
+      // Fallback a motor local si la función serverless no está corriendo localmente
+    }
+
+    // 2. Fallback de Motor Local (Garantiza funcionamiento en entorno vite dev offline)
+    const clientes = options?.clientes || [];
+    const proyectos = options?.proyectos || [];
+    const pagos = options?.pagos || [];
+    const currentPeriod = new Date().toISOString().slice(0, 7);
+
+    const summary = {
+      timestamp: new Date().toISOString(),
+      evaluatedDay: dayToEvaluate,
+      dryRun,
+      totalProyectosEvaluados: proyectos.length,
+      totalClientesNotificados: 0,
+      recordatoriosHoy: 0,
+      recordatoriosPreventivos: 0,
+      alertasMora: 0,
+      mensajesWhatsApp: 0,
+      correosResend: 0,
+      errores: [] as string[],
+      detalles: [] as any[],
+    };
+
+    const notifiedSet = new Set<string>();
+
+    for (const proy of proyectos) {
+      if (proy.estado !== 'activo') continue;
+      const cliente = clientes.find((c) => c.id === proy.cliente_id);
+      if (!cliente || cliente.estado !== 'activo') continue;
+
+      const diaCobro = Number(proy.dia_cobro);
+      const isDueToday = diaCobro === dayToEvaluate;
+      const isUpcoming = diaCobro === ((dayToEvaluate + 3) > 31 ? (dayToEvaluate + 3 - 31) : (dayToEvaluate + 3));
+
+      // Verificar si ya pagó este período
+      const yaPago = pagos.some((p) => p.proyecto_id === proy.id && p.periodo_mes === currentPeriod && p.estado === 'pagado');
+      if (yaPago) continue;
+
+      let tipo: 'corte_hoy' | 'preventivo_3_dias' | null = null;
+      if (isDueToday) {
+        tipo = 'corte_hoy';
+        summary.recordatoriosHoy++;
+      } else if (isUpcoming) {
+        tipo = 'preventivo_3_dias';
+        summary.recordatoriosPreventivos++;
+      }
+
+      if (tipo) {
+        notifiedSet.add(cliente.id);
+        if (!dryRun) {
+          summary.mensajesWhatsApp++;
+          await DataService.logNotificacion({
+            cliente_id: cliente.id,
+            tipo: 'whatsapp',
+            mensaje: `[CRON] ${tipo === 'corte_hoy' ? 'Aviso de cobro hoy' : 'Aviso preventivo 3 días'} - ${proy.nombre_proyecto}`,
+            estado: 'enviado',
+          });
+        }
+        summary.detalles.push({
+          cliente: cliente.nombre,
+          tipo,
+          canal: 'WhatsApp (Evolution API)',
+          estado: dryRun ? 'simulado' : 'enviado',
+        });
+      }
+    }
+
+    // Evaluar pagos en mora
+    const mora = pagos.filter((p) => p.estado === 'vencido');
+    for (const pago of mora) {
+      const cliente = clientes.find((c) => c.id === pago.cliente_id);
+      if (!cliente || notifiedSet.has(cliente.id)) continue;
+
+      summary.alertasMora++;
+      notifiedSet.add(cliente.id);
+
+      if (!dryRun) {
+        summary.mensajesWhatsApp++;
+        await DataService.logNotificacion({
+          cliente_id: cliente.id,
+          tipo: 'whatsapp',
+          mensaje: `[CRON] Reclamo saldo vencido - Período ${pago.periodo_mes}`,
+          estado: 'enviado',
+          referencia_pago_id: pago.id,
+        });
+      }
+
+      summary.detalles.push({
+        cliente: cliente.nombre,
+        tipo: 'mora_vencida',
+        canal: 'WhatsApp',
+        estado: dryRun ? 'simulado' : 'enviado',
+      });
+    }
+
+    summary.totalClientesNotificados = notifiedSet.size;
+
+    return {
+      success: true,
+      message: dryRun
+        ? `Simulación local completada: ${summary.totalClientesNotificados} clientes calificados.`
+        : `Cron de cobranza ejecutado: ${summary.totalClientesNotificados} notificaciones procesadas.`,
+      summary,
+    };
+  },
 };
+

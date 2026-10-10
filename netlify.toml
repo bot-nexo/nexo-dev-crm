@@ -1,9 +1,13 @@
 [build]
-  command = "npm run build"
+  command = "pnpm build"
   publish = "dist"
 
 [functions]
   directory = "netlify/functions"
+
+# Scheduled Function: Cron Diario de Cobranza (09:00 AM UTC-5 / 14:00 UTC)
+[functions."cron-billing"]
+  schedule = "0 14 * * *"
 
 # SPA Fallback for client-side routing
 [[redirects]]
